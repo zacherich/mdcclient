@@ -1,0 +1,38 @@
+unit dataModule;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, Data.DB, Datasnap.DBClient, IdTCPClient, IdTCPConnection,  IdComponent, IdBaseComponent,
+  Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
+
+type
+  Tdata_module = class(TDataModule)
+    dts_mdc: TClientDataSet;
+    dsc_mdc: TDataSource;
+    dts_badmod: TClientDataSet;
+    dsc_badmod: TDataSource;
+    procedure dts_mdcNewRecord(DataSet: TDataSet);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  data_module: Tdata_module;
+
+implementation
+
+{%CLASSGROUP 'Vcl.Controls.TControl'}
+
+{$R *.dfm}
+
+uses publicLib;
+
+procedure Tdata_module.dts_mdcNewRecord(DataSet: TDataSet);
+begin
+  DataSet.FieldByName('mdc_state').AsInteger := 0;
+end;
+
+end.

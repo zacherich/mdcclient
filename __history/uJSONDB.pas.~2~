@@ -1,0 +1,201 @@
+unit uJSONDB;
+
+interface
+  uses
+     SysUtils, Classes, Variants, DB, DBClient, SuperObject, Dialogs;
+  type
+    TJSONDB = class
+
+    private
+      class function getJsonFieldNames(res: ISuperObject):TStringList ;
+      class function getJsonFieldValues(res: ISuperObject):TStringList ;
+    public
+      class procedure JsonToClientDataSet(jsonArr: TSuperArray; dstCDS: TClientDataSet);
+      class function ClientDataSetToJSON(srcCDS: TClientDataSet):UTF8String;
+  end;
+
+implementation
+
+function GetToken(var astring: string;const fmt:array of char): string;
+var
+   i,j:integer;
+   Found:Boolean;
+begin
+    found:=false;
+    result:='';
+    aString := TrimLeft(aString);
+
+    if length(astring)=0 then exit;
+
+    I:=1;
+    while I<=length(Astring) do
+          begin
+          found:=false;
+          if aString[i]<=#128 then
+             begin
+             for j:=Low(Fmt) to High(Fmt) do
+                 begin
+                 if (astring[i]<>Fmt[j])  then continue;
+                 found:=true;
+                 break;
+                 end;
+             if Not found then I:=I+1;
+             end
+          else I:=I+2;
+
+          if found then break;
+          end;
+
+    if found then
+    begin
+      result:=copy(astring,1,i-1);
+      delete(astring,1,i);
+    end
+    else
+    begin
+      result:=astring;
+      astring:='';
+    end;
+end;
+
+function GetFieldParams(PropName, Source:string): string;
+var
+   S1, S2: string;
+   TmpParam: string;
+   AChar: string;
+   aValue, aPropName, aSource: string;
+begin
+   Result:='';
+   if Source='' then Exit;
+   aSource := Source;
+   while aSource <> '' do
+   begin
+     aValue := GetToken(aSource,[',']);
+     aPropName := GetToken(aValue,[':']);
+     if CompareText(PropName,aPropName) <> 0 then continue;
+     Result := aValue;
+     break;
+   end;
+end;
+//從json取得欄位名稱
+class function TJSONDB.getJsonFieldNames(res: ISuperObject):TStringList ;
+var
+  i: Integer;
+  fieldList : TStringList;
+  fieldNames :String;
+begin
+  try
+    fieldList := TStringList.Create;
+    fieldNames := res.AsObject.getNames.AsString;
+    fieldNames := StringReplace(fieldNames, '[', '', [rfReplaceAll, rfIgnoreCase]);
+    fieldNames := StringReplace(fieldNames, ']', '', [rfReplaceAll, rfIgnoreCase]);
+    fieldNames := StringReplace(fieldNames, '"', '', [rfReplaceAll, rfIgnoreCase]);
+
+    fieldList.Delimiter := ',';
+    fieldList.DelimitedText := fieldNames;
+    Result:= fieldList;
+  finally
+    //fieldList.Free;
+  end;
+end;
+
+//從json取得欄位值
+class function TJSONDB.getJsonFieldValues(res: ISuperObject):TStringList ;
+var
+  i: Integer;
+  fieldList : TStringList;
+  fieldValues :String;
+begin
+  try
+    fieldList := TStringList.Create;
+    fieldValues := res.AsObject.getValues.AsString;
+    fieldValues := StringReplace(fieldValues, '[', '', [rfReplaceAll, rfIgnoreCase]);
+    fieldValues := StringReplace(fieldValues, ']', '', [rfReplaceAll, rfIgnoreCase]);
+    fieldValues := StringReplace(fieldValues, '"', '', [rfReplaceAll, rfIgnoreCase]);
+
+    fieldList.Delimiter := ',';
+    fieldList.DelimitedText := fieldValues;
+    Result:= fieldList;
+  finally
+    //fieldList.Free;
+  end;
+end;
+//json轉CDS
+class procedure TJSONDB.JsonToClientDataSet(jsonArr: TSuperArray; dstCDS: TClientDataSet);
+var
+  fieldList: TStringList;
+  valuesList: TStringList;
+  jsonSrc: string;
+  i, j: Integer;
+begin
+
+  fieldList:= getJsonFieldNames(SO[jsonArr[0].AsJson(False,False)]);
+  if (dstCDS.FieldCount = 0) then
+  begin
+    for i := 0 to fieldList.Count -1 do
+    begin
+      dstCDS.FieldDefs.Add(fieldList[i],ftString,100, False);
+    end;
+    dstCDS.CreateDataSet;
+    dstCDS.Close;
+    dstCDS.Open;
+  end;
+  try
+    dstCDS.DisableControls;
+    for i := 0 to jsonArr.Length -1 do
+    begin
+      jsonSrc:= SO[jsonArr[i].AsJson(False,False)].AsString;
+      jsonSrc := StringReplace(jsonSrc, '[', '', [rfReplaceAll, rfIgnoreCase]);
+      jsonSrc := StringReplace(jsonSrc, ']', '', [rfReplaceAll, rfIgnoreCase]);
+      jsonSrc := StringReplace(jsonSrc, '"', '', [rfReplaceAll, rfIgnoreCase]);
+      jsonSrc := StringReplace(jsonSrc, '{', '', [rfReplaceAll, rfIgnoreCase]);
+      jsonSrc := StringReplace(jsonSrc, '}', '', [rfReplaceAll, rfIgnoreCase]);
+      dstCDS.Append;
+      for j:= 0 to fieldList.Count -1 do
+      begin
+        dstCDS.FieldByName(fieldList[j]).AsString:= GetFieldParams(fieldList[j], jsonSrc);
+      end;
+      dstCDS.Post;
+    end;
+
+  finally
+    dstCDS.EnableControls;
+  end;
+end;
+//ClientDataSet轉JSON
+class function TJSONDB.ClientDataSetToJSON(srcCDS: TClientDataSet): UTF8String;
+var
+  i, j: Integer;
+  keyValue:String;
+  jsonList:TStringList;
+  jsonResult:String;
+begin
+  if not srcCDS.Active then srcCDS.Open;
+
+  try
+    jsonList := TStringList.Create;
+    srcCDS.DisableControls;
+    srcCDS.First;
+    while not srcCDS.Eof do
+    begin
+      keyValue:= '';
+      for i := 0 to srcCDS.FieldDefs.Count -1 do
+      begin
+        keyValue:= keyValue + Format('"%s":"%s",',[srcCDS.Fields[i].FieldName, srcCDS.Fields[i].AsString]);
+
+      end;
+      jsonList.Add(Format('{%s}',[Copy(keyValue, 0, Length(keyValue)-1)]));
+      srcCDS.Next;
+    end;
+    for i := 0 to jsonList.Count -1 do
+    begin
+      jsonResult := jsonResult + jsonList[i] + ',';
+    end;
+    Result:= Utf8Encode(Format('[%s]', [Copy(jsonResult, 0, Length(jsonResult)-1)]));
+  finally
+    srcCDS.EnableControls;
+    jsonList.Free;
+  end;
+end;
+
+end.

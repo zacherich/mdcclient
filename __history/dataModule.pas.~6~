@@ -1,0 +1,59 @@
+unit dataModule;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, Data.DB, Datasnap.DBClient, IdTCPClient, IdTCPConnection,  IdComponent, IdBaseComponent,
+  Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
+
+type
+  Tdata_module = class(TDataModule)
+    mdc_DataSet1: TClientDataSet;
+    DataSource1: TDataSource;
+    procedure mdc_DataSet1NewRecord(DataSet: TDataSet);
+    procedure mdc_DataSet1AfterPost(DataSet: TDataSet);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  data_module: Tdata_module;
+
+implementation
+
+{%CLASSGROUP 'Vcl.Controls.TControl'}
+
+{$R *.dfm}
+
+uses publicLib;
+
+procedure Tdata_module.mdc_DataSet1AfterPost(DataSet: TDataSet);
+var
+  dataJson, mdcJson: UTF8String;
+begin
+  dataJson := CDS1LineToJson(data_module.mdc_DataSet1);
+  mdcJson := MDCEncode('cobra-ep-105','872382374',FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P','4206','C800342','zhang san','CTTS-194283-WPSF','','','','809','1545615','93474','1545615-73',dataJson);
+  TThread.CreateAnonymousThread(
+  procedure
+  var
+    i : integer;
+    Redis: IRedisClient;
+  begin
+    try
+      Redis := TRedisClient.Create(gvIPAdress, gvPort);
+      Redis.Connect;
+        Redis.LPUSH('aasequipment', [mdcJson]);
+    finally
+      Redis := nil;
+    end;
+  end).Start;
+end;
+
+procedure Tdata_module.mdc_DataSet1NewRecord(DataSet: TDataSet);
+begin
+  DataSet.FieldByName('mdc_state').AsInteger := 0;
+end;
+
+end.

@@ -1,0 +1,252 @@
+unit ipEdit;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Classes, Controls, ComCtrls, CommCtrl,
+  WinSock;
+
+type
+
+  TAboutString = type String;
+  TIPEdit   = class;
+
+  TIPAddressFieldChangeEvent = procedure(Sender: TIPEdit; OldField, Value: Byte) of object;
+  TIPAddressChangeEvent = procedure(Sender: TIPEdit; IPAddress: String) of object;
+
+  TIPEdit = class(TWinControl)
+  private
+    FAbout: TAboutString;
+    FIPAddress, FMinIPAddress, FMaxIPAddress: Cardinal;
+    FActiveField: Byte;
+    FOnIPChange: TIPAddressChangeEvent;
+    FOnIPFieldChange: TIPAddressFieldChangeEvent;
+  private
+    function IP2String(const Value: Cardinal): String;
+    function String2IP(const Value: String): Cardinal;
+    function AdjustHeight: Integer;
+    function  GetMinIPAddress: String;
+    function  GetMaxIPAddress: String;
+    function  GetIPAddress: String;
+    procedure SetMinIPAddress(Value: String);
+    procedure SetMaxIPAddress(Value: String);
+    procedure SetIPAddress(Value: String);
+    function  GetEmpty: Boolean;
+    procedure SetActiveField(Value: Byte);
+  protected
+    procedure CreateParams(var Params: TCreateParams); override;
+    procedure CreateWnd; override;
+    procedure WMSize(var Message: TWMSize); message WM_SIZE;
+    procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
+    procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
+  public
+    constructor Create(AOwner: TComponent); override;
+    procedure Clear;
+  published
+    property About: TAboutString read FAbout write FAbout;
+    property ActiveField: Byte read FActiveField write SetActiveField;
+    property DragCursor;
+    property DragMode;
+    property Empty: Boolean read GetEmpty;
+    property Enabled;
+    property HelpContext;
+    property Font;
+    property IPAddress: String read GetIPAddress write SetIPAddress;
+    property MinIPAddress: String read GetMinIPAddress write SetMinIPAddress;
+    property MaxIPAddress: String read GetMaxIPAddress write SetMaxIPAddress;
+    property ParentColor;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property ShowHint;
+    property TabOrder;
+    property TabStop;
+    property Tag;
+    property Visible;
+    property OnEnter;
+    property OnExit;
+    property OnDblClick;
+    property OnIPChange: TIPAddressChangeEvent read FOnIPChange write FOnIPChange;
+    property OnIPFieldChange: TIPAddressFieldChangeEvent read FOnIPFieldChange write FOnIPFieldChange;
+  end;
+
+implementation
+
+uses Math, Forms;
+
+constructor TIPEdit.Create(AOwner: TComponent);
+const
+  EditStyle = [csClickEvents, csSetCaption, csDoubleClicks, csFixedHeight];
+begin
+  inherited Create(AOwner);
+  if NewStyleControls then
+    ControlStyle := EditStyle
+  else
+    ControlStyle := EditStyle + [csFramed];
+  Width := 140;
+  Height :=  25;
+  TabStop := True;
+  ParentColor := False;
+  FIPAddress    := $00000000;
+  FMinIPAddress := $00000000;
+  FMaxIPAddress := $FFFFFFFF;
+  FActiveField := 0;
+end;
+
+procedure TIPEdit.CreateParams(var Params: TCreateParams);
+begin
+  InitCommonControl(ICC_INTERNET_CLASSES);
+  inherited CreateParams(Params);
+  CreateSubClass(Params, WC_IPADDRESS);
+  with Params do
+  begin
+    Style := WS_VISIBLE or WS_BORDER or WS_CHILD;
+    if NewStyleControls and Ctl3D then
+    begin
+      Style := Style and (not WS_BORDER);
+      ExStyle := ExStyle or WS_EX_CLIENTEDGE;
+    end;
+  end;
+end;
+
+procedure TIPEdit.CreateWnd;
+begin
+  inherited CreateWnd;
+  Perform(WM_SIZE, SIZE_RESTORED, MakeLParam(Width, AdjustHeight));
+  Perform(IPM_SETADDRESS, 0, FIPAddress);
+end;
+
+procedure TIPEdit.WMSize(var Message: TWMSize);
+begin
+  inherited;
+  Message.Height := AdjustHeight;
+  Message.Width := Max(Width, Screen.PixelsPerInch * 121 div 96);
+  Message.Result := 0;
+end;
+
+procedure TIPEdit.CNNotify(var Message: TWMNotify);
+begin
+  with Message.NMHdr^ do
+  case Code of
+    IPN_FIELDCHANGED :
+      begin
+        FActiveField := PNMIPAddress(Message.NMHdr)^.iField;
+        if Assigned(OnIpFieldChange) then
+        with PNMIPAddress(Message.NMHdr)^ do
+        begin
+          OnIPFieldChange(Self, iField, iValue);
+        end;
+      end;
+  end;
+end;
+
+procedure TIPEdit.CNCommand(var Message: TWMCommand);
+begin
+  if (Message.NotifyCode = EN_CHANGE) then
+  begin
+    Perform(IPM_GETADDRESS, 0, LParam(@FIPAddress));
+    if Assigned(OnIpChange) then OnIPChange(Self, IPAddress);
+  end;
+end;
+
+function TIPEdit.IP2String(const Value: Cardinal): String;
+var ia: TInAddr;
+    pC: PChar;
+begin
+  ia.S_addr := ntohl(Value);
+  pC := inet_ntoa(ia);
+  SetLength(Result, StrLen(pC));
+  StrCopy(PChar(Result), pC);
+end;
+
+function TIPEdit.String2IP(const Value: String): Cardinal;
+begin
+  Result := htonl(inet_addr(PChar(Value)));
+end;
+
+function TIPEdit.GetIPAddress: String;
+begin
+  Result := IP2String(FIPAddress);
+end;
+
+procedure TIPEdit.SetIPAddress(Value: String);
+begin
+  FIPAddress := String2IP(Value);
+  Perform(IPM_SETADDRESS, 0, FIPAddress);
+end;
+
+function TIPEdit.GetMinIPAddress: String;
+begin
+  Result := IP2String(FMinIPAddress);
+end;
+
+procedure TIPEdit.SetMinIPAddress(Value: String);
+begin
+  FMinIPAddress := String2IP(Value);
+  Perform(IPM_SETRANGE, 0, MAKEIPRANGE(First_IPAddress(FMinIPAddress), First_IPAddress(FMaxIPAddress)));
+  Perform(IPM_SETRANGE, 1, MAKEIPRANGE(Second_IPAddress(FMinIPAddress), Second_IPAddress(FMaxIPAddress)));
+  Perform(IPM_SETRANGE, 2, MAKEIPRANGE(Third_IPAddress(FMinIPAddress), Third_IPAddress(FMaxIPAddress)));
+  Perform(IPM_SETRANGE, 3, MAKEIPRANGE(Fourth_IPAddress(FMinIPAddress), Fourth_IPAddress(FMaxIPAddress)));
+end;
+
+function TIPEdit.GetMaxIPAddress: String;
+begin
+  Result := IP2String(FMaxIPAddress);
+end;
+
+procedure TIPEdit.SetMaxIPAddress(Value: String);
+begin
+ FMaxIPAddress := String2IP(Value);
+ Perform(IPM_SETRANGE, 0, MAKEIPRANGE(First_IPAddress(FMinIPAddress), First_IPAddress(FMaxIPAddress)));
+ Perform(IPM_SETRANGE, 1, MAKEIPRANGE(Second_IPAddress(FMinIPAddress), Second_IPAddress(FMaxIPAddress)));
+ Perform(IPM_SETRANGE, 2, MAKEIPRANGE(Third_IPAddress(FMinIPAddress), Third_IPAddress(FMaxIPAddress)));
+ Perform(IPM_SETRANGE, 3, MAKEIPRANGE(Fourth_IPAddress(FMinIPAddress), Fourth_IPAddress(FMaxIPAddress)));
+end;
+
+function TIPEdit.GetEmpty: Boolean;
+begin
+  Result := Perform(IPM_ISBLANK, 0, 0) <> 0;
+end;
+
+procedure TIPEdit.Clear;
+begin
+  Perform(IPM_CLEARADDRESS, 0, 0);
+end;
+
+procedure TIPEdit.SetActiveField(Value: Byte);
+begin
+  if (Value < 4) then
+  begin
+    Perform(IPM_SETFOCUS, WParam(Value), 0);
+    FActiveField := Value;
+  end;
+end;
+
+function TIPEdit.AdjustHeight: Integer;
+var
+  DC: HDC;
+  oldFont: HFont;
+  I: Integer;
+  Metrics: TTextMetric;
+begin
+  DC := GetDC(Handle);
+  try
+    oldFont := SelectObject(DC, Font.Handle);
+    GetTextMetrics(DC, Metrics);
+    SelectObject(DC, oldFont);
+  finally
+    ReleaseDC(Handle, DC);
+  end;
+  if NewStyleControls then
+  begin
+    if Ctl3D then I := 8 else I := 6;
+    I := GetSystemMetrics(SM_CYBORDER) * I;
+  end else
+  begin
+    I := Metrics.tmHeight;
+    I := I div 4 + GetSystemMetrics(SM_CYBORDER) * 4;
+  end;
+  Result := Metrics.tmHeight + I;
+end;
+
+end.
