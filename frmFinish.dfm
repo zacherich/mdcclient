@@ -11,26 +11,28 @@ object frm_finish: Tfrm_finish
   Font.Name = 'Tahoma'
   Font.Style = []
   FormStyle = fsStayOnTop
+  KeyPreview = True
   OldCreateOrder = False
+  OnKeyPress = FormKeyPress
   PixelsPerInch = 96
   TextHeight = 19
   object lbl_tag_doing_qty: TLabel
     Left = 283
-    Top = 24
+    Top = 6
     Width = 64
     Height = 19
     Caption = #24453#25253#24037#65306
   end
   object lbl_tag_good_qty: TLabel
     Left = 283
-    Top = 56
+    Top = 38
     Width = 63
     Height = 19
     Caption = #21512'   '#26684#65306
   end
   object lbl_tag_bad_qty: TLabel
     Left = 32
-    Top = 56
+    Top = 38
     Width = 64
     Height = 19
     Caption = #19981#21512#26684#65306
@@ -43,7 +45,7 @@ object frm_finish: Tfrm_finish
   end
   object lbl_bad_qty: TLabel
     Left = 102
-    Top = 56
+    Top = 38
     Width = 9
     Height = 19
     Caption = '0'
@@ -56,21 +58,21 @@ object frm_finish: Tfrm_finish
   end
   object lbl_good_qty: TLabel
     Left = 346
-    Top = 56
+    Top = 38
     Width = 9
     Height = 19
     Caption = '0'
   end
   object lbl_doing_qty: TLabel
     Left = 346
-    Top = 24
+    Top = 6
     Width = 9
     Height = 19
     Caption = '0'
   end
   object lbl_tag_product_code: TLabel
     Left = 32
-    Top = 23
+    Top = 5
     Width = 63
     Height = 19
     Caption = #20135'   '#21697#65306
@@ -83,7 +85,7 @@ object frm_finish: Tfrm_finish
   end
   object lbl_product_code: TLabel
     Left = 98
-    Top = 23
+    Top = 5
     Width = 16
     Height = 19
     Caption = #26080
@@ -135,12 +137,65 @@ object frm_finish: Tfrm_finish
       C1FF4BB692FF237F60CB05130E27000000030000000000000000000000000000
       000000000001000000030A241B411B60489D258464CF2C9D77EE258867CF1F71
       56B00E3226560000000600000002000000000000000000000000}
+    OnClick = sbt_submitClick
+  end
+  object lbl_tag_container_code: TLabel
+    Left = 32
+    Top = 77
+    Width = 64
+    Height = 19
+    Caption = #23481#22120#30721#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_container_code: TLabel
+    Left = 98
+    Top = 77
+    Width = 16
+    Height = 19
+    Caption = #26080
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_tag_container_name: TLabel
+    Left = 283
+    Top = 77
+    Width = 64
+    Height = 19
+    Caption = #23481#22120#21517#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_container_name: TLabel
+    Left = 346
+    Top = 77
+    Width = 16
+    Height = 19
+    Caption = #26080
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
   end
   object dbg_badmode: TDBGrid
     Left = 8
-    Top = 81
+    Top = 102
     Width = 448
-    Height = 344
+    Height = 201
     DataSource = data_module.dsc_badmode
     TabOrder = 0
     TitleFont.Charset = DEFAULT_CHARSET
@@ -148,5 +203,15 @@ object frm_finish: Tfrm_finish
     TitleFont.Height = -16
     TitleFont.Name = 'Tahoma'
     TitleFont.Style = []
+  end
+  object Memo1: TMemo
+    Left = 8
+    Top = 327
+    Width = 448
+    Height = 98
+    Enabled = False
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 1
   end
 end

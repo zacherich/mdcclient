@@ -24,7 +24,6 @@ uses
   Procedure NewTxt(filePath:String);
   Procedure AppendTxt(filePath:String;Str:String);
   Procedure Log(Str:String; Color: TColor = clBlack);
-  function IsValidIP(IP:string):boolean;
   function Aurl(CONST fvHost: String; CONST fvPort: Integer): String;
   //JSONRPC封装函数——调用RPC
   function JsonRPCCall(fvURL: String; CONST fvParams: String): String;
@@ -40,6 +39,7 @@ uses
   function queryLineType(CONST fvLine_code: String): Bool;   //查询生产线类型
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
   function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;   //扫描工票工单
+  function scanContainer(CONST fvBarcode: String): String;   //扫描容器
   function getWorkorder(CONST fvApp_code: String): String;  //查询主线工单
   function feedMaterial(CONST fvApp_code, fvBarcode: String): String;   //设备上料
   function queryBadmod(CONST fvWorkcenter_id: Integer): String;
@@ -102,6 +102,9 @@ var
   gvWorkcenter_id : Integer;
   gvWorkcenter_name : String;
   gvWorkticket_state : String;
+  gvContainer_id : Integer;
+  gvContainer_code : String;
+  gvContainer_name : String;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
   gvSequence : Integer;
@@ -441,17 +444,6 @@ Begin
   end;
 End;
 
-//网络相关函数
-function IsValidIP(IP:string):boolean;
-begin
-  if Longword(inet_addr(PAnsiChar(IP)))=INADDR_NONE then
-  begin
-     result:=false;
-     exit;
-  end
-  else result:=true;
-end;
-
 function Aurl(CONST fvHost: String; CONST fvPort: Integer): String;
 begin
   if fvPort = 80 then
@@ -622,6 +614,11 @@ end;
 function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "get_workstation_workticket", ["'+ fvApp_code +'"], ["'+ fvBarcode +'"]]');
+end;
+
+function scanContainer(CONST fvBarcode: String): String;   //扫描容器
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.container", "action_scanning", ["'+ fvBarcode +'"]]');
 end;
 
 function getWorkorder(CONST fvApp_code: String): String;

@@ -649,7 +649,7 @@ object frm_main: Tfrm_main
     Top = 217
     Width = 506
     Height = 431
-    ActivePage = tst_workorder
+    ActivePage = tst_log
     Align = alClient
     TabOrder = 2
     object tst_workorder: TTabSheet
@@ -744,10 +744,6 @@ object frm_main: Tfrm_main
     end
     object tst_collection: TTabSheet
       Caption = #37319#38598#25968#25454
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
@@ -846,6 +842,8 @@ object frm_main: Tfrm_main
         Align = alClient
         ItemHeight = 18
         TabOrder = 0
+        ExplicitTop = 216
+        ExplicitHeight = 182
       end
     end
   end

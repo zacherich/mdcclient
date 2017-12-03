@@ -256,11 +256,11 @@ begin
           frm_main.lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
-          log(DateTimeToStr(now())+', [INFO] 工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的扫描成功成功！');
+          log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的扫描成功成功！');
         end
       else  //刷新工单失败
         begin
-          log(DateTimeToStr(now())+', [ERROR]  工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
+          log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_barcode+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
         end;
       frm_main.sbt_start.Show;
       frm_main.sbt_refresh.Hide;
@@ -792,56 +792,71 @@ var
   vA: TSuperArray;
   i: Integer;
 begin
-  if lbl_doing_qty.Caption <> '0' then
+  if gvStaff_code<>'' then
     begin
-      vO := SO(queryBadmod(gvWorkcenter_id));
-      if vO.B['result.success'] then  //获取不良模式成功
+      if lbl_doing_qty.Caption <> '0' then
         begin
-          vA := vO['result.badmodelist'].AsArray;
-          with data_module.cds_badmode do
+          vO := SO(queryBadmod(gvWorkcenter_id));
+          if vO.B['result.success'] then  //获取不良模式成功
             begin
-              EmptyDataSet;
-              for i := 0 to vA.Length-1 do
+              vA := vO['result.badmodelist'].AsArray;
+              with data_module.cds_badmode do
                 begin
-                  Append;
-                  vResult := SO(vA[i].AsString);
-                  FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
-                  FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
-                  FieldByName('badmode_qty').AsInteger := 0;
-                  Post;
+                  EmptyDataSet;
+                  for i := 0 to vA.Length-1 do
+                    begin
+                      Append;
+                      vResult := SO(vA[i].AsString);
+                      FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
+                      FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
+                      FieldByName('badmode_qty').AsInteger := 0;
+                      Post;
+                    end;
+                  Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
                 end;
-              Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
+            end
+          else
+            begin
+              with data_module.cds_badmode do
+                begin
+                  EmptyDataSet;
+                end;
+            end;
+          frm_finish.Show;
+          frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
+          frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
+          if gvline_type='flowing' then    //主线上
+            begin
+              //
+            end
+          else if gvline_type='station' then    //工作站
+            begin
+              if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+                begin
+                  frm_finish.lbl_tag_container_code.Visible := True;
+                  frm_finish.lbl_container_code.Visible := True;
+                  frm_finish.lbl_tag_container_name.Visible := True;
+                  frm_finish.lbl_container_name.Visible := True;
+                  frm_finish.lbl_container_code.Caption := '无';
+                  frm_finish.lbl_container_name.Caption := '无';
+                end
+              else
+                begin
+                  frm_finish.lbl_tag_container_code.Visible := False;
+                  frm_finish.lbl_container_code.Visible := False;
+                  frm_finish.lbl_tag_container_name.Visible := True;
+                  frm_finish.lbl_container_name.Visible := True;
+                end;
             end;
         end
       else
         begin
-          with data_module.cds_badmode do
-            begin
-              EmptyDataSet;
-            end;
-        end;
-      frm_finish.Show;
-      frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
-      frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
-      if gvline_type='flowing' then
-        begin
-          //
-        end
-      else if gvline_type='station' then
-        begin
-          if gvLastworkcenter then
-            begin
-              //
-            end
-          else
-            begin
-              //
-            end;
+          Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
         end;
     end
   else
     begin
-      Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
+      Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
     end;
 end;
 
