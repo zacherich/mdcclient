@@ -4,7 +4,7 @@ object frm_main: Tfrm_main
   BorderStyle = bsDialog
   Caption = #23433#36153#35834#23425#24503'MES'
   ClientHeight = 671
-  ClientWidth = 506
+  ClientWidth = 523
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -23,7 +23,7 @@ object frm_main: Tfrm_main
   object pnl_top: TPanel
     Left = 0
     Top = 0
-    Width = 506
+    Width = 523
     Height = 102
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
@@ -33,6 +33,7 @@ object frm_main: Tfrm_main
     Font.Style = []
     ParentFont = False
     TabOrder = 0
+    ExplicitWidth = 506
     object lbl_equipment_state: TLabel
       Left = 4
       Top = 71
@@ -62,7 +63,7 @@ object frm_main: Tfrm_main
       Shape = stEllipse
     end
     object gpl_operator: TGridPanel
-      Left = 368
+      Left = 385
       Top = 1
       Width = 137
       Height = 100
@@ -91,6 +92,7 @@ object frm_main: Tfrm_main
           Value = 62.500000000000000000
         end>
       TabOrder = 0
+      ExplicitLeft = 368
       DesignSize = (
         137
         100)
@@ -129,7 +131,7 @@ object frm_main: Tfrm_main
       end
     end
     object gpl_equipment: TGridPanel
-      Left = 74
+      Left = 91
       Top = 1
       Width = 294
       Height = 100
@@ -190,6 +192,7 @@ object frm_main: Tfrm_main
           SizeStyle = ssAuto
         end>
       TabOrder = 1
+      ExplicitLeft = 74
       DesignSize = (
         294
         100)
@@ -293,7 +296,7 @@ object frm_main: Tfrm_main
   object pnl_middle: TPanel
     Left = 0
     Top = 102
-    Width = 506
+    Width = 523
     Height = 115
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
@@ -303,6 +306,7 @@ object frm_main: Tfrm_main
     Font.Style = []
     ParentFont = False
     TabOrder = 1
+    ExplicitWidth = 506
     object lbl_tag_wo: TLabel
       Left = 16
       Top = 37
@@ -369,7 +373,7 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_tag_bad_qty: TLabel
-      Left = 391
+      Left = 410
       Top = 62
       Width = 64
       Height = 19
@@ -460,7 +464,7 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_bad_qty: TLabel
-      Left = 449
+      Left = 468
       Top = 62
       Width = 9
       Height = 19
@@ -643,22 +647,76 @@ object frm_main: Tfrm_main
         0000000000000000000000000000000000000000000000000000}
       OnClick = sbt_startClick
     end
+    object lbl_tag_container_code: TLabel
+      Left = 267
+      Top = 87
+      Width = 64
+      Height = 19
+      Caption = #23481#22120#30721#65306
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clPurple
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lbl_container_code: TLabel
+      Left = 325
+      Top = 87
+      Width = 16
+      Height = 19
+      Caption = #26080
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clPurple
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lbl_tag_container_name: TLabel
+      Left = 410
+      Top = 87
+      Width = 64
+      Height = 19
+      Caption = #23481#22120#21517#65306
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clPurple
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lbl_container_name: TLabel
+      Left = 468
+      Top = 87
+      Width = 16
+      Height = 19
+      Caption = #26080
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clPurple
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 217
-    Width = 506
+    Width = 523
     Height = 431
     ActivePage = tst_log
     Align = alClient
     TabOrder = 2
+    ExplicitWidth = 506
     object tst_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
+      ExplicitWidth = 498
       object Splitter1: TSplitter
         Left = 0
         Top = 201
-        Width = 498
+        Width = 515
         Height = 3
         Cursor = crVSplit
         Align = alTop
@@ -668,16 +726,17 @@ object frm_main: Tfrm_main
       object pnl_workorder: TPanel
         Left = 0
         Top = 0
-        Width = 498
+        Width = 515
         Height = 201
         Align = alTop
         Ctl3D = False
         ParentCtl3D = False
         TabOrder = 0
+        ExplicitWidth = 498
         object lbl_tag_workorder: TLabel
           Left = 1
           Top = 1
-          Width = 496
+          Width = 513
           Height = 18
           Align = alTop
           Caption = #24037#21333
@@ -695,7 +754,7 @@ object frm_main: Tfrm_main
         object dbg_workorder: TDBGrid
           Left = 1
           Top = 19
-          Width = 496
+          Width = 513
           Height = 181
           Align = alClient
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -710,14 +769,15 @@ object frm_main: Tfrm_main
       object pnl_materiel: TPanel
         Left = 0
         Top = 204
-        Width = 498
+        Width = 515
         Height = 194
         Align = alClient
         TabOrder = 1
+        ExplicitWidth = 498
         object lbl_tag_materiel: TLabel
           Left = 1
           Top = 1
-          Width = 496
+          Width = 513
           Height = 18
           Align = alTop
           Caption = #21407#26448#26009
@@ -729,7 +789,7 @@ object frm_main: Tfrm_main
         object dbg_materiel: TDBGrid
           Left = 1
           Top = 19
-          Width = 496
+          Width = 513
           Height = 174
           Align = alClient
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -744,10 +804,11 @@ object frm_main: Tfrm_main
     end
     object tst_collection: TTabSheet
       Caption = #37319#38598#25968#25454
+      ExplicitWidth = 498
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
-        Width = 498
+        Width = 515
         Height = 373
         Align = alClient
         DataSource = data_module.dsc_mdc
@@ -768,7 +829,7 @@ object frm_main: Tfrm_main
       object pnl_collection: TPanel
         Left = 0
         Top = 0
-        Width = 498
+        Width = 515
         Height = 25
         Align = alTop
         Color = clInfoBk
@@ -776,6 +837,7 @@ object frm_main: Tfrm_main
         ParentBackground = False
         ParentCtl3D = False
         TabOrder = 1
+        ExplicitWidth = 498
         object lbl_tag_send_qty: TLabel
           Left = 26
           Top = 1
@@ -833,24 +895,24 @@ object frm_main: Tfrm_main
     object tst_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
+      ExplicitWidth = 498
       object lbx_log: TListBox
         Left = 0
         Top = 0
-        Width = 498
+        Width = 515
         Height = 398
         Style = lbVirtual
         Align = alClient
         ItemHeight = 18
         TabOrder = 0
-        ExplicitTop = 216
-        ExplicitHeight = 182
+        ExplicitWidth = 498
       end
     end
   end
   object stb_tipsbar: TStatusBar
     Left = 0
     Top = 648
-    Width = 506
+    Width = 523
     Height = 23
     Panels = <
       item
@@ -859,6 +921,7 @@ object frm_main: Tfrm_main
       item
         Width = 50
       end>
+    ExplicitWidth = 506
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer

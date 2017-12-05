@@ -2,7 +2,7 @@ object frm_finish: Tfrm_finish
   Left = 0
   Top = 0
   Caption = ' '#20135#21697#25253#24037
-  ClientHeight = 466
+  ClientHeight = 444
   ClientWidth = 464
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,7 +13,6 @@ object frm_finish: Tfrm_finish
   FormStyle = fsStayOnTop
   KeyPreview = True
   OldCreateOrder = False
-  OnKeyPress = FormKeyPress
   PixelsPerInch = 96
   TextHeight = 19
   object lbl_tag_doing_qty: TLabel
@@ -98,7 +97,7 @@ object frm_finish: Tfrm_finish
   end
   object sbt_submit: TSpeedButton
     Left = 375
-    Top = 431
+    Top = 407
     Width = 81
     Height = 31
     Caption = #30830#23450
@@ -139,63 +138,11 @@ object frm_finish: Tfrm_finish
       56B00E3226560000000600000002000000000000000000000000}
     OnClick = sbt_submitClick
   end
-  object lbl_tag_container_code: TLabel
-    Left = 32
-    Top = 77
-    Width = 64
-    Height = 19
-    Caption = #23481#22120#30721#65306
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object lbl_container_code: TLabel
-    Left = 98
-    Top = 77
-    Width = 16
-    Height = 19
-    Caption = #26080
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object lbl_tag_container_name: TLabel
-    Left = 283
-    Top = 77
-    Width = 64
-    Height = 19
-    Caption = #23481#22120#21517#65306
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object lbl_container_name: TLabel
-    Left = 346
-    Top = 77
-    Width = 16
-    Height = 19
-    Caption = #26080
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
   object dbg_badmode: TDBGrid
     Left = 8
-    Top = 102
+    Top = 63
     Width = 448
-    Height = 201
+    Height = 338
     DataSource = data_module.dsc_badmode
     TabOrder = 0
     TitleFont.Charset = DEFAULT_CHARSET
@@ -203,15 +150,5 @@ object frm_finish: Tfrm_finish
     TitleFont.Height = -16
     TitleFont.Name = 'Tahoma'
     TitleFont.Style = []
-  end
-  object Memo1: TMemo
-    Left = 8
-    Top = 327
-    Width = 448
-    Height = 98
-    Enabled = False
-    Lines.Strings = (
-      'Memo1')
-    TabOrder = 1
   end
 end

@@ -64,6 +64,10 @@ type
     lbl_tag_state: TLabel;
     lbl_state: TLabel;
     sbt_start: TSpeedButton;
+    lbl_tag_container_code: TLabel;
+    lbl_container_code: TLabel;
+    lbl_tag_container_name: TLabel;
+    lbl_container_name: TLabel;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -73,6 +77,7 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure sbt_startClick(Sender: TObject);
     procedure sbt_submitClick(Sender: TObject);
+    procedure RefreshWorkorder;
   private
     { Private declarations }
   public
@@ -82,7 +87,6 @@ type
     { Public declarations }
   end;
   procedure RefreshEquipment;
-  procedure RefreshWorkorder;
   procedure BadmodeCDS;
 
 var
@@ -223,7 +227,7 @@ begin
     end;
 end;
 
-procedure RefreshWorkorder;
+procedure Tfrm_main.RefreshWorkorder;
 var
   vO: ISuperObject;
 begin
@@ -256,6 +260,22 @@ begin
           frm_main.lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
+          if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+            begin
+              frm_main.lbl_tag_container_code.Visible := True;
+              frm_main.lbl_container_code.Visible := True;
+              frm_main.lbl_tag_container_name.Visible := True;
+              frm_main.lbl_container_name.Visible := True;
+              frm_main.lbl_container_code.Caption := '无';
+              frm_main.lbl_container_name.Caption := '无';
+            end
+          else
+            begin
+              frm_main.lbl_tag_container_code.Visible := False;
+              frm_main.lbl_container_code.Visible := False;
+              frm_main.lbl_tag_container_name.Visible := True;
+              frm_main.lbl_container_name.Visible := True;
+            end;
           log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的扫描成功成功！');
         end
       else  //刷新工单失败
@@ -461,6 +481,22 @@ begin
                       lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
                       lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
                       gvLastworkcenter := vO.B['result.lastworkcenter'];
+                      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+                        begin
+                          lbl_tag_container_code.Visible := True;
+                          lbl_container_code.Visible := True;
+                          lbl_tag_container_name.Visible := True;
+                          lbl_container_name.Visible := True;
+                          lbl_container_code.Caption := '无';
+                          lbl_container_name.Caption := '无';
+                        end
+                      else
+                        begin
+                          lbl_tag_container_code.Visible := False;
+                          lbl_container_code.Visible := False;
+                          lbl_tag_container_name.Visible := True;
+                          lbl_container_name.Visible := True;
+                        end;
                       log(DateTimeToStr(now())+', [INFO] 工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的扫描成功成功！');
                     end
                   else
@@ -486,6 +522,23 @@ begin
                 begin
                   log(DateTimeToStr(now())+', [INFO] 员工号【'+gvStaff_code+'】的'+gvStaff_name+'扫码打卡失败，错误信息：'+vO.S['result.message']);
                   Application.MessageBox(PChar('扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                end;
+            end;
+          if copy(uvInput,1,2)='AT' then  //扫描到的是容器
+            begin
+              vO := SO(scanContainer(uvInput));
+              if vO.B['result.success'] then  //成功扫描到容器
+                begin
+                      gvContainer_id := vO.I['result.container_id'];
+                      gvContainer_code := vO.S['result.container_name'];
+                      gvContainer_name := vO.S['result.container_alias'];
+                      lbl_container_code.Caption := gvContainer_code;
+                      lbl_container_name.Caption := gvContainer_name;
+                      log(DateTimeToStr(now())+', [INFO] 容器号【'+gvContainer_code+'】的扫描成功成功！');
+                end
+              else  //扫描容器失败
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  容器号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫描失败，错误信息：'+vO.S['result.message']);
                 end;
             end;
         end
@@ -792,72 +845,60 @@ var
   vA: TSuperArray;
   i: Integer;
 begin
-  if gvStaff_code<>'' then
+  if gvStaff_code='' then
     begin
-      if lbl_doing_qty.Caption <> '0' then
+      Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
+      Exit;
+    end;
+  if lbl_doing_qty.Caption = '0' then
+    begin
+      Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
+      Exit;
+    end;
+  if gvline_type='flowing' then    //主线上
+    begin
+          //
+    end
+  else if gvline_type='station' then    //工作站
+    begin
+      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
         begin
-          vO := SO(queryBadmod(gvWorkcenter_id));
-          if vO.B['result.success'] then  //获取不良模式成功
+          if lbl_container_code.Caption = '无' then
             begin
-              vA := vO['result.badmodelist'].AsArray;
-              with data_module.cds_badmode do
-                begin
-                  EmptyDataSet;
-                  for i := 0 to vA.Length-1 do
-                    begin
-                      Append;
-                      vResult := SO(vA[i].AsString);
-                      FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
-                      FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
-                      FieldByName('badmode_qty').AsInteger := 0;
-                      Post;
-                    end;
-                  Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
-                end;
-            end
-          else
-            begin
-              with data_module.cds_badmode do
-                begin
-                  EmptyDataSet;
-                end;
+              Application.MessageBox(PChar('末道工序必须扫描容器！'),'错误',MB_ICONERROR);
+              Exit;
             end;
-          frm_finish.Show;
-          frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
-          frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
-          if gvline_type='flowing' then    //主线上
-            begin
-              //
-            end
-          else if gvline_type='station' then    //工作站
-            begin
-              if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
-                begin
-                  frm_finish.lbl_tag_container_code.Visible := True;
-                  frm_finish.lbl_container_code.Visible := True;
-                  frm_finish.lbl_tag_container_name.Visible := True;
-                  frm_finish.lbl_container_name.Visible := True;
-                  frm_finish.lbl_container_code.Caption := '无';
-                  frm_finish.lbl_container_name.Caption := '无';
-                end
-              else
-                begin
-                  frm_finish.lbl_tag_container_code.Visible := False;
-                  frm_finish.lbl_container_code.Visible := False;
-                  frm_finish.lbl_tag_container_name.Visible := True;
-                  frm_finish.lbl_container_name.Visible := True;
-                end;
-            end;
-        end
-      else
+        end;
+    end;
+  vO := SO(queryBadmod(gvWorkcenter_id));
+  if vO.B['result.success'] then  //获取不良模式成功
+    begin
+      vA := vO['result.badmodelist'].AsArray;
+      with data_module.cds_badmode do
         begin
-          Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
+          EmptyDataSet;
+          for i := 0 to vA.Length-1 do
+            begin
+              Append;
+              vResult := SO(vA[i].AsString);
+              FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
+              FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
+              FieldByName('badmode_qty').AsInteger := 0;
+              Post;
+            end;
+          Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
         end;
     end
   else
     begin
-      Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
+      with data_module.cds_badmode do
+        begin
+          EmptyDataSet;
+        end;
     end;
+  frm_finish.Show;
+  frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
+  frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
 end;
 
 procedure Tfrm_main.Timer1Timer(Sender: TObject);

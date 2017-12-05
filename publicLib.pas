@@ -643,7 +643,7 @@ end;
 
 function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", ['+ IntToStr(fvWorkticket_id) +'], ['+ IntToStr(fvApp_id) +'], ['+ FloatToStr(fvCommit_qty) +'], ["'+fvBadmode_lines+'"], ['+IntToStr(fvContainer_id)+']]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
 end.
