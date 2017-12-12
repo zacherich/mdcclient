@@ -37,7 +37,7 @@ type
     lbl_tag_delimiter: TLabel;
     cmb_delimiter: TComboBox;
     spn_header_line: TSpinEdit;
-    SpeedButton1: TSpeedButton;
+    spb_load_file: TSpeedButton;
     cmb_datatype: TComboBox;
     stg_header_line_set: TStringGrid;
     sbt_equipment_check: TSpeedButton;
@@ -56,7 +56,6 @@ type
     lbl_tag_begin_line: TLabel;
     spn_end_line: TSpinEdit;
     spn_begin_line: TSpinEdit;
-    bdt_template: TBCEditor;
     lbl_tag_queue_name: TLabel;
     edt_queue_name: TEdit;
     btn_confirm: TBitBtn;
@@ -65,11 +64,13 @@ type
     lbl_tag_port: TLabel;
     lbl_host: TLabel;
     lbl_port: TLabel;
+    bdt_template: TBCEditor;
+    ckb_testing: TCheckBox;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
     procedure cmb_delimiterChange(Sender: TObject);
-    procedure SpeedButton1Click(Sender: TObject);
+    procedure spb_load_fileClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure cmb_datatypeExit(Sender: TObject);
     procedure stg_header_line_setSelectCell(Sender: TObject; ACol,
@@ -80,7 +81,6 @@ type
     procedure rdg_filetypeClick(Sender: TObject);
     procedure spn_begin_lineChange(Sender: TObject);
     procedure spn_end_lineChange(Sender: TObject);
-    procedure sbt_equipment_saveClick(Sender: TObject);
     procedure btn_confirmClick(Sender: TObject);
   private
     { Private declarations }
@@ -362,7 +362,26 @@ begin
           frm_Main.lbl_fail_qty.Caption := '0';
         end;
       end;
-      Self.ModalResult := mrOk;
+
+    //设备信息保存
+    ini_set.EraseSection('equipment');
+    gvApp_id := StrToInt(lbl_app_id.Caption);
+    gvApp_code := edt_app_code.Text;
+    ini_set.WriteString('equipment', 'app_code', gvApp_code);
+    gvApp_name := lbl_app_name.Caption;
+    if Length(Trim(edt_app_secret.Text))=0 then
+      gvApp_secret := 0
+    else
+      gvApp_secret := StrToInt(Trim(edt_app_secret.Text));
+    ini_set.WriteInteger('equipment', 'app_secret', gvApp_secret);
+    gvApp_testing := ckb_testing.Checked;
+    ini_set.WriteBool('equipment', 'app_testing', gvApp_testing);
+    ini_set.UpdateFile;
+    //设备信息保存
+    if Application.MessageBox(PChar('设备信息、数据采集配置成功,是否保存?'),'提示',MB_OKCANCEL)=IDOK then
+      begin
+        Self.ModalResult := mrOk;
+      end;
     end
   else
     begin
@@ -405,7 +424,6 @@ end;
 procedure Tfrm_set.FormShow(Sender: TObject);
 var vList : TStringList;
     vFile : TFileStream;
-    i : integer;
 begin
   //读取设备采集配置信息
   lbl_data_path.Caption := gvData_path;
@@ -497,7 +515,7 @@ begin
           0://普通文本文件
           begin
             //if (vList.Count>0) and (vList.Count<100) then
-              bdt_template.Lines.Text:=vList.Text;
+            bdt_template.Lines.Text:=vList.Text;
             //else
             //  begin
             //    for i := 0 to 10 do
@@ -570,7 +588,7 @@ begin
   end;
 end;
 
-procedure Tfrm_set.SpeedButton1Click(Sender: TObject);
+procedure Tfrm_set.spb_load_fileClick(Sender: TObject);
 var
   vList : TStringList;
   vO: ISuperObject;
@@ -722,7 +740,6 @@ begin
           //gvApp_code := vResult.S['code'];
           lbl_app_name.Caption := vResult.S['name'];
           lbl_equipment_state.Caption:= vResult.S['state'];
-          //lbl_app_secret.Caption :=
           vA := vResult['mesline_id'].AsArray;
           lbl_line_id.Caption := IntToStr(vA[0].AsInteger);
           lbl_line_code.Caption := vA[1].AsString;
@@ -733,35 +750,6 @@ begin
           uvCheckOK := True;
         end;
     end;
-end;
-
-procedure Tfrm_set.sbt_equipment_saveClick(Sender: TObject);
-begin
-  ini_set.EraseSection('equipment');
-  gvApp_id := StrToInt(lbl_app_id.Caption);
-  ini_set.WriteInteger('equipment', 'app_id', gvApp_id);
-  gvApp_code := edt_app_code.Text;
-  ini_set.WriteString('equipment', 'app_code', gvApp_code);
-  gvApp_name := lbl_app_name.Caption;
-  ini_set.WriteString('equipment', 'app_name', gvApp_name);
-  if Length(Trim(edt_app_secret.Text))=0 then
-    gvApp_secret := 0
-  else
-    gvApp_secret := StrToInt(Trim(edt_app_secret.Text));
-  ini_set.WriteInteger('equipment', 'app_secret', gvApp_secret);
-  gvline_id := StrToInt(lbl_line_id.Caption);
-  ini_set.WriteInteger('equipment', 'line_id', gvline_id);
-  gvline_code := lbl_line_code.Caption;
-  ini_set.WriteString('equipment', 'line_code', gvline_code);
-  gvStation_id := StrToInt(lbl_station_id.Caption);
-  ini_set.WriteInteger('equipment', 'station_id', gvStation_id);
-  gvStation_code := lbl_station_code.Caption;
-  ini_set.WriteString('equipment', 'station_code', gvStation_code);
-  gvStation_name := lbl_station_name.Caption;
-  ini_set.WriteString('equipment', 'station_name', gvStation_name);
-  ini_set.UpdateFile;
-  //todo frm_Main.pnl_bottom.Caption:='设备：【'+ gvApp_code + '】'+ gvApp_name +'    工位：【' + gvStation_code + '】' + gvStation_name;
-  self.Hide;
 end;
 
 procedure Tfrm_set.spn_begin_lineChange(Sender: TObject);

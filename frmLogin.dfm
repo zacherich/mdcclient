@@ -2,7 +2,7 @@ object frm_login: Tfrm_login
   Left = 0
   Top = 0
   BorderStyle = bsDialog
-  Caption = 'frm_login'
+  Caption = #23433#36153#35834#23425#24503'MES'#31995#32479#30331#38470
   ClientHeight = 270
   ClientWidth = 465
   Color = clBtnFace
@@ -84,6 +84,10 @@ object frm_login: Tfrm_login
       Caption = 'tbs_netset'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lbl_port: TLabel
         Left = 250
         Top = 139

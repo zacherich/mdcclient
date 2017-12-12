@@ -1,0 +1,71 @@
+object frm_container: Tfrm_container
+  Left = 0
+  Top = 0
+  BorderIcons = [biMinimize, biMaximize]
+  Caption = #25195#25551#23481#22120
+  ClientHeight = 144
+  ClientWidth = 472
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  KeyPreview = True
+  OldCreateOrder = False
+  OnKeyPress = FormKeyPress
+  PixelsPerInch = 96
+  TextHeight = 13
+  object lbl_tag_container_code: TLabel
+    Left = 35
+    Top = 15
+    Width = 64
+    Height = 19
+    Caption = #23481#22120#30721#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_container_code: TLabel
+    Left = 93
+    Top = 15
+    Width = 16
+    Height = 19
+    Caption = #26080
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_tag_container_name: TLabel
+    Left = 264
+    Top = 15
+    Width = 64
+    Height = 19
+    Caption = #23481#22120#21517#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbl_container_name: TLabel
+    Left = 312
+    Top = 15
+    Width = 16
+    Height = 19
+    Caption = #26080
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clPurple
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+end

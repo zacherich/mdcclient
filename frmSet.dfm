@@ -30,7 +30,7 @@ object frm_set: Tfrm_set
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -39,12 +39,8 @@ object frm_set: Tfrm_set
     Font.Style = []
     ParentFont = False
     TabOrder = 1
-    ExplicitWidth = 757
-    ExplicitHeight = 547
     object TabSheet1: TTabSheet
       Caption = #22522#26412#35774#32622
-      ExplicitWidth = 749
-      ExplicitHeight = 513
       object Image1: TImage
         Left = 16
         Top = 32
@@ -196,7 +192,7 @@ object frm_set: Tfrm_set
       end
       object sbt_equipment_check: TSpeedButton
         Left = 616
-        Top = 85
+        Top = 84
         Width = 73
         Height = 26
         Caption = #26657'   '#39564
@@ -314,12 +310,18 @@ object frm_set: Tfrm_set
         TabOrder = 1
         OnChange = edt_app_codeChange
       end
+      object ckb_testing: TCheckBox
+        Left = 616
+        Top = 33
+        Width = 84
+        Height = 17
+        Caption = #26159#27979#35797#26426
+        TabOrder = 2
+      end
     end
     object TabSheet2: TTabSheet
       Caption = #25968#25454#37319#38598
       ImageIndex = 1
-      ExplicitWidth = 749
-      ExplicitHeight = 513
       object lbl_tag_data_path: TLabel
         Left = 22
         Top = 11
@@ -389,13 +391,13 @@ object frm_set: Tfrm_set
           Height = 18
           Caption = #20998#38548#31526#65306
         end
-        object SpeedButton1: TSpeedButton
+        object spb_load_file: TSpeedButton
           Left = 596
           Top = 378
           Width = 89
           Height = 32
           Caption = #21152'  '#36733
-          OnClick = SpeedButton1Click
+          OnClick = spb_load_fileClick
         end
         object lbl_tag_monitor: TLabel
           Left = 511
@@ -599,23 +601,18 @@ object frm_set: Tfrm_set
           Value = 0
           OnChange = spn_begin_lineChange
         end
-        object bdt_template: TBCEditor
-          Left = 16
-          Top = 48
-          Width = 681
-          Height = 120
-          LeftMargin.Bookmarks.Visible = False
-          LeftMargin.LineNumbers.Options = []
-          Lines.Strings = (
-            'BCEditor1')
-          TabOrder = 8
-          WantReturns = False
-        end
         object edt_queue_name: TEdit
           Left = 416
           Top = 418
           Width = 161
           Height = 26
+          TabOrder = 8
+        end
+        object bdt_template: TBCEditor
+          Left = 16
+          Top = 48
+          Width = 680
+          Height = 120
           TabOrder = 9
         end
       end
@@ -659,7 +656,7 @@ object frm_set: Tfrm_set
     TabOrder = 3
   end
   object OpenDialog1: TOpenDialog
-    Left = 660
-    Top = 136
+    Left = 684
+    Top = 400
   end
 end

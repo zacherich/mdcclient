@@ -58,16 +58,12 @@ type
     dbg_workorder: TDBGrid;
     dbg_materiel: TDBGrid;
     stb_tipsbar: TStatusBar;
-    sbt_submit: TSpeedButton;
-    sbt_refresh: TSpeedButton;
+    spb_submit: TSpeedButton;
+    spb_refresh: TSpeedButton;
     Timer1: TTimer;
     lbl_tag_state: TLabel;
     lbl_state: TLabel;
-    sbt_start: TSpeedButton;
-    lbl_tag_container_code: TLabel;
-    lbl_container_code: TLabel;
-    lbl_tag_container_name: TLabel;
-    lbl_container_name: TLabel;
+    spb_start: TSpeedButton;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -75,9 +71,12 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure Timer1Timer(Sender: TObject);
-    procedure sbt_startClick(Sender: TObject);
-    procedure sbt_submitClick(Sender: TObject);
+    procedure spb_startClick(Sender: TObject);
+    procedure spb_submitClick(Sender: TObject);
     procedure RefreshWorkorder;
+    procedure RefreshMaterials;
+    procedure RefreshStaff;
+    procedure lbl_tag_equipmentDblClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -87,7 +86,6 @@ type
     { Public declarations }
   end;
   procedure RefreshEquipment;
-  procedure BadmodeCDS;
 
 var
   frm_main: Tfrm_main;
@@ -98,7 +96,7 @@ implementation
 
 {$R *.dfm}
 
-uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish;
+uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer;
 
 procedure RefreshEquipment;
 begin
@@ -233,8 +231,17 @@ var
 begin
   if gvline_type='flowing' then
     begin
-      frm_main.sbt_start.Hide;
-      frm_main.sbt_refresh.Show;
+      vO := SO(getLineWorkorder(gvApp_code));
+      if vO.B['result.success'] then  //成功刷新工单
+        begin
+
+        end
+      else  //刷新工单失败
+        begin
+          log(DateTimeToStr(now())+', [ERROR] 生产线没有本道工位的工单，错误信息：'+vO.S['result.message']);
+        end;
+      frm_main.spb_start.Hide;
+      frm_main.spb_refresh.Show;
     end
   else if gvline_type='station' then
     begin
@@ -260,30 +267,176 @@ begin
           frm_main.lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
-          if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
-            begin
-              frm_main.lbl_tag_container_code.Visible := True;
-              frm_main.lbl_container_code.Visible := True;
-              frm_main.lbl_tag_container_name.Visible := True;
-              frm_main.lbl_container_name.Visible := True;
-              frm_main.lbl_container_code.Caption := '无';
-              frm_main.lbl_container_name.Caption := '无';
-            end
-          else
-            begin
-              frm_main.lbl_tag_container_code.Visible := False;
-              frm_main.lbl_container_code.Visible := False;
-              frm_main.lbl_tag_container_name.Visible := True;
-              frm_main.lbl_container_name.Visible := True;
-            end;
           log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的扫描成功成功！');
         end
       else  //刷新工单失败
         begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_barcode+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
         end;
-      frm_main.sbt_start.Show;
-      frm_main.sbt_refresh.Hide;
+      frm_main.spb_start.Show;
+      frm_main.spb_refresh.Hide;
+    end;
+end;
+
+procedure Tfrm_main.RefreshStaff;
+begin
+  if queryStaffExist(gvApp_code) then  //设备上有操作工
+    begin
+      lbl_operator.Caption := gvStaff_code;
+      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
+    end
+  else  //设备上没有操作工
+    begin
+      lbl_operator.Caption := '';
+      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，没有有员工号在岗！');
+    end;
+end;
+
+
+procedure Tfrm_main.RefreshMaterials;
+var
+  vO_c, vO_m, vResult_c, vResult_m: ISuperObject;
+  vMaterials, vConsume : TSuperArray;
+  c , m: Integer;
+  vExist : Bool;
+begin
+  vO_m := SO(getFeedMaterials(gvApp_code));
+  if vO_m.B['result.success'] then  //成功得到设备所在工位的上料信息
+    begin
+      vMaterials := vO_m.A['result.materiallist'];
+    end
+  else
+    begin
+      vO_m := SO('{"materiallist":[]}');
+      vMaterials := vO_m.A['materiallist'];
+    end;
+  if gvWorkorder_id>0 then  //当前有工单在制
+    begin
+      vO_c := SO(getWorkordConsume(gvWorkorder_id, gvWorkcenter_id));
+      if vO_c.B['result.success'] then  //成功得到工单消耗明细
+        begin
+          vConsume := vO_c.A['result.consumelist'];
+        end
+      else
+        begin
+          vO_c := SO('{"consumelist":[]}');
+          vConsume := vO_c.A['consumelist'];
+        end;
+    end
+  else
+    begin
+      vO_c := SO('{"consumelist":[]}');
+      vConsume := vO_c.A['consumelist'];
+    end;
+  if (vConsume.Length<>0) or (vMaterials.Length<>0) then     //至少有消耗信息或上料信息
+    begin
+      if (vConsume.Length<>0) and (vMaterials.Length<>0) then  //消耗信息和上料信息都有
+        begin
+          with data_module.cds_materials do
+            begin
+              EmptyDataSet;
+              for c := 0 to vConsume.Length-1 do
+                begin
+                  vResult_c := SO(vConsume[c].AsString);
+                  Append;
+                  FieldByName('material_id').AsInteger := vResult_c.I['material_id'];
+                  FieldByName('material_code').AsString := vResult_c.S['material_code'];
+                  FieldByName('input_qty').AsFloat := vResult_c.C['input_qty'];
+                  FieldByName('consume_qty').AsFloat := vResult_c.C['consume_qty'];
+                  FieldByName('material_qty').AsFloat := 0;
+                  FieldByName('consume_unit').AsFloat := vResult_c.C['consume_unit'];
+                  FieldByName('leave_qty').AsFloat := vResult_c.C['leave_qty'];
+                  FieldByName('materiallot_id').AsInteger := 0;
+                  FieldByName('materiallot_name').AsString := '';
+                  Post;
+                end;
+              for m := 0 to vMaterials.Length-1 do    //如果有相同料号的上料库存，则更新dataset，否则插入新记录
+                begin
+                  vResult_m := SO(vMaterials[m].AsString);
+                  vExist := False;
+                  First;
+                  while not eof do
+                    begin
+                      if vResult_m.I['material_id']=FieldByName('material_id').AsInteger then   //消耗信息和上料信息中有同样的原料
+                        begin
+                          vExist := True;
+                          Edit;
+                          FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
+                          FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
+                          FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
+                          Post;
+                          Break;
+                        end;
+                      Next;
+                    end;
+                  if Not vExist then
+                    begin
+                      Append;
+                      FieldByName('material_id').AsInteger := vResult_m.I['material_id'];
+                      FieldByName('material_code').AsString := vResult_m.S['material_code'];
+                      FieldByName('input_qty').AsFloat := 0;
+                      FieldByName('consume_qty').AsFloat := 0;
+                      FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
+                      FieldByName('consume_unit').AsFloat := 0;
+                      FieldByName('leave_qty').AsFloat := 0;
+                      FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
+                      FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
+                      Post;
+                    end;
+                end;
+            end;
+        end
+      else if vConsume.Length<>0 then   //只有消耗信息
+        begin
+          with data_module.cds_materials do
+            begin
+              EmptyDataSet;
+              for c := 0 to vConsume.Length-1 do
+                begin
+                  Append;
+                  vResult_c := SO(vConsume[c].AsString);
+                  FieldByName('material_id').AsInteger := vResult_c.I['material_id'];
+                  FieldByName('material_code').AsString := vResult_c.S['material_code'];
+                  FieldByName('input_qty').AsFloat := vResult_c.C['input_qty'];
+                  FieldByName('consume_qty').AsFloat := vResult_c.C['consume_qty'];
+                  FieldByName('material_qty').AsFloat := 0;
+                  FieldByName('consume_unit').AsFloat := vResult_c.C['consume_unit'];
+                  FieldByName('leave_qty').AsFloat := vResult_c.C['leave_qty'];
+                  FieldByName('materiallot_id').AsInteger := 0;
+                  FieldByName('materiallot_name').AsString := '';
+                  Post;
+                end;
+            end;
+        end
+      else   //只有上料信息
+        begin
+          with data_module.cds_materials do
+            begin
+              EmptyDataSet;
+              for m := 0 to vMaterials.Length-1 do
+                begin
+                  Append;
+                  vResult_m := SO(vMaterials[m].AsString);
+                  FieldByName('material_id').AsInteger := vResult_m.I['material_id'];
+                  FieldByName('materail_code').AsString := vResult_m.S['materail_code'];
+                  FieldByName('input_qty').AsFloat := 0;
+                  FieldByName('consume_qty').AsFloat := 0;
+                  FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
+                  FieldByName('consume_unit').AsFloat := 0;
+                  FieldByName('leave_qty').AsFloat := 0;
+                  FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
+                  FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
+                  Post;
+                end;
+            end;
+        end;
+    end
+  else
+    begin
+      with data_module.cds_materials do
+        begin
+          EmptyDataSet;
+        end;
     end;
 end;
 
@@ -301,47 +454,6 @@ begin
     end;
 end;
 
-procedure BadmodeCDS;
-var i: Integer;
-begin
-  with data_module.cds_badmode do
-    begin
-      FieldDefs.Clear;
-      Close;
-      FieldDefs.Add('badmode_id', ftInteger, 0, True);
-      FieldDefs.Add('badmode_name', ftString, 30,False);
-      FieldDefs.Add('badmode_qty', ftInteger, 0, True);
-      IndexDefs.Add('idx_badmode_name', 'badmode_name', []);
-      AggregatesActive:=False;
-      with Aggregates.Add do
-        begin
-          AggregateName:='badmode_qty_sum';
-          expression:='Sum(badmode_qty)';
-          IndexName:= 'idx_badmode_name';
-          GroupingLevel:=0;
-          Active:=True;
-        end;
-      AggregatesActive:=True;
-      CreateDataSet;
-      Open;
-    end;
-  for i:=0 to frm_finish.dbg_badmode.Columns.Count-1 do
-    begin
-      if frm_finish.dbg_badmode.Columns[i].FieldName='badmode_id' then
-        begin
-          frm_finish.dbg_badmode.Columns[i].Visible := False;
-        end;
-      if frm_finish.dbg_badmode.Columns[i].FieldName='badmode_name' then
-        begin
-          frm_finish.dbg_badmode.Columns[i].Title.Caption := '不良模式';
-        end;
-      if frm_finish.dbg_badmode.Columns[i].FieldName='badmode_qty' then
-        begin
-          frm_finish.dbg_badmode.Columns[i].Title.Caption := '数量';
-        end;
-      frm_finish.dbg_badmode.Columns[i].Title.Alignment := taCenter;
-    end;
-end;
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
 //  CanClose := False;
@@ -360,6 +472,8 @@ begin
 
   //取设备设置信息
   gvApp_code := ini_set.ReadString('equipment', 'app_code', gvApp_code);
+  gvApp_secret := ini_set.ReadInteger('equipment', 'app_secret', gvApp_secret);
+  gvApp_testing := ini_set.ReadBool('equipment', 'app_testing', gvApp_testing);
 
   //取Redis服务器信息
   gvQueue_name := ini_set.ReadString('redis', 'queue_name', gvQueue_name);
@@ -430,30 +544,12 @@ begin
               vO := SO(scanStaff(gvApp_code, uvInput));
               if vO.B['result.success'] then  //扫码打卡成功
                 begin
-                  if vO.S['result.action']='working' then  //操作工上岗
-                    begin
-                      vStaff_code := vO.S['result.employee_code'];
-                      vStaff_name := vO.S['result.employee_name'];
-                      log(DateTimeToStr(now())+', [INFO] 员工号【'+vStaff_code+'】的'+vStaff_name+'扫码上岗成功！');
-                    end
-                  else  //操作工离岗
-                    begin
-                      log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码离岗成功！');
-                    end;
-                  if queryStaffExist(gvApp_code) then  //设备上有操作工
-                    begin
-                      lbl_operator.Caption := gvStaff_code;
-                      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
-                    end
-                  else  //设备上没有操作工
-                    begin
-                      lbl_operator.Caption := '';
-                    end;
+                  RefreshStaff;
                 end
               else  //扫码打卡失败
                 begin
-                  log(DateTimeToStr(now())+', [INFO] 员工号【'+gvStaff_code+'】的'+gvStaff_name+'扫码打卡失败，错误信息：'+vO.S['result.message']);
-                  Application.MessageBox(PChar('扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                  log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败，错误信息：'+vO.S['result.message']);
+                  Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
                 end;
             end;
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
@@ -481,23 +577,9 @@ begin
                       lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
                       lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
                       gvLastworkcenter := vO.B['result.lastworkcenter'];
-                      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
-                        begin
-                          lbl_tag_container_code.Visible := True;
-                          lbl_container_code.Visible := True;
-                          lbl_tag_container_name.Visible := True;
-                          lbl_container_name.Visible := True;
-                          lbl_container_code.Caption := '无';
-                          lbl_container_name.Caption := '无';
-                        end
-                      else
-                        begin
-                          lbl_tag_container_code.Visible := False;
-                          lbl_container_code.Visible := False;
-                          lbl_tag_container_name.Visible := True;
-                          lbl_container_name.Visible := True;
-                        end;
                       log(DateTimeToStr(now())+', [INFO] 工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的扫描成功成功！');
+                      RefreshMaterials;   //扫描到工单后刷新材料信息
+                      RefreshStaff;
                     end
                   else
                     begin
@@ -510,35 +592,19 @@ begin
                   log(DateTimeToStr(now())+', [ERROR]  工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
                 end;
             end;
-          if copy(uvInput,1,2)='AC' then  //扫描到的是物料
+          if (copy(uvInput,1,2)='AC') OR (copy(uvInput,1,2)='AT') then  //扫描到的是物料
             begin
               vO := SO(feedMaterial(gvApp_code, uvInput));
               if vO.B['result.success'] then  //扫码上料成功
                 begin
+                  RefreshMaterials;
                   Application.MessageBox(PChar('[INFO] 物料标签号【'+uvInput+'】上料成功！'),'提示信息',MB_ICONINFORMATION);
                   log(DateTimeToStr(now())+', [INFO] 物料标签号【'+uvInput+'】上料成功，返回【'+vO.AsObject.S['result']);
                 end
               else  //扫码打卡失败
                 begin
-                  log(DateTimeToStr(now())+', [INFO] 员工号【'+gvStaff_code+'】的'+gvStaff_name+'扫码打卡失败，错误信息：'+vO.S['result.message']);
-                  Application.MessageBox(PChar('扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
-                end;
-            end;
-          if copy(uvInput,1,2)='AT' then  //扫描到的是容器
-            begin
-              vO := SO(scanContainer(uvInput));
-              if vO.B['result.success'] then  //成功扫描到容器
-                begin
-                      gvContainer_id := vO.I['result.container_id'];
-                      gvContainer_code := vO.S['result.container_name'];
-                      gvContainer_name := vO.S['result.container_alias'];
-                      lbl_container_code.Caption := gvContainer_code;
-                      lbl_container_name.Caption := gvContainer_name;
-                      log(DateTimeToStr(now())+', [INFO] 容器号【'+gvContainer_code+'】的扫描成功成功！');
-                end
-              else  //扫描容器失败
-                begin
-                  log(DateTimeToStr(now())+', [ERROR]  容器号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫描失败，错误信息：'+vO.S['result.message']);
+                  log(DateTimeToStr(now())+', [ERROR] 物料标签号【'+uvInput+'】上料失败，错误信息：'+vO.S['result.message']);
+                  Application.MessageBox(PChar(' 物料标签号【'+uvInput+'】上料失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
                 end;
             end;
         end
@@ -555,23 +621,23 @@ end;
 procedure Tfrm_main.FormShow(Sender: TObject);
 begin
   RefreshEquipment;
-  BadmodeCDS;
   if gvDoing_qty>0 then
     begin
       RefreshWorkorder;
+      RefreshMaterials;
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
     end
   else
     begin
       if gvline_type='flowing' then
         begin
-         sbt_start.Hide;
-          sbt_refresh.Show;
+          spb_start.Hide;
+          spb_refresh.Show;
         end
       else if gvline_type='station' then
         begin
-          sbt_start.Show;
-          sbt_refresh.Hide;
+          spb_start.Show;
+          spb_refresh.Hide;
         end;
     end;
   if queryStaffExist(gvApp_code) then  //设备上有操作工
@@ -607,6 +673,11 @@ begin
     end;
 end;
 
+procedure Tfrm_main.lbl_tag_equipmentDblClick(Sender: TObject);
+begin
+  frm_set.ShowModal;
+end;
+
 procedure Tfrm_main.OxygenDirectorySpy1ChangeDirectory(Sender: TObject; ChangeRecord: TDirectoryChangeRecord);
 var
   vList, vData : TStringList;
@@ -632,7 +703,6 @@ begin
           begin
             vList.Clear;
             vData.Clear;
-            //memo1.Text:= GetLastLine(vFileName);
             SplitStr(GetLastLine(vFileName), gvDeli, gvCol_count, vData);
             if vData.Count>0 then
               begin
@@ -822,7 +892,7 @@ begin
   end;
 end;
 
-procedure Tfrm_main.sbt_startClick(Sender: TObject);
+procedure Tfrm_main.spb_startClick(Sender: TObject);
 var
   vO: ISuperObject;
 begin
@@ -839,12 +909,13 @@ begin
     end;
 end;
 
-procedure Tfrm_main.sbt_submitClick(Sender: TObject);
+procedure Tfrm_main.spb_submitClick(Sender: TObject);
 var
   vO, vResult: ISuperObject;
   vA: TSuperArray;
   i: Integer;
 begin
+  RefreshStaff;
   if gvStaff_code='' then
     begin
       Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
@@ -855,38 +926,26 @@ begin
       Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if gvline_type='flowing' then    //主线上
-    begin
-          //
-    end
-  else if gvline_type='station' then    //工作站
-    begin
-      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
-        begin
-          if lbl_container_code.Caption = '无' then
-            begin
-              Application.MessageBox(PChar('末道工序必须扫描容器！'),'错误',MB_ICONERROR);
-              Exit;
-            end;
-        end;
-    end;
-  vO := SO(queryBadmod(gvWorkcenter_id));
+  vO := SO(queryBadmode(gvWorkcenter_id));
   if vO.B['result.success'] then  //获取不良模式成功
     begin
-      vA := vO['result.badmodelist'].AsArray;
-      with data_module.cds_badmode do
+      vA := vO.A['result.badmodelist'];
+      if vA.Length>0 then
         begin
-          EmptyDataSet;
-          for i := 0 to vA.Length-1 do
+          with data_module.cds_badmode do
             begin
-              Append;
-              vResult := SO(vA[i].AsString);
-              FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
-              FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
-              FieldByName('badmode_qty').AsInteger := 0;
-              Post;
+              EmptyDataSet;
+              for i := 0 to vA.Length-1 do
+                begin
+                  Append;
+                  vResult := SO(vA[i].AsString);
+                  FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
+                  FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
+                  FieldByName('badmode_qty').AsInteger := 0;
+                  Post;
+                end;
+              Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
             end;
-          Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
         end;
     end
   else
@@ -896,9 +955,23 @@ begin
           EmptyDataSet;
         end;
     end;
-  frm_finish.Show;
   frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
   frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
+  if gvline_type='flowing' then    //主线上
+    begin
+          //
+    end
+  else if gvline_type='station' then    //工作站
+    begin
+      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+        begin
+          frm_container.Show;
+        end
+      else
+        begin
+          frm_finish.Show;
+        end;
+    end;
 end;
 
 procedure Tfrm_main.Timer1Timer(Sender: TObject);

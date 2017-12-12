@@ -40,17 +40,21 @@ uses
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
   function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;   //扫描工票工单
   function scanContainer(CONST fvBarcode: String): String;   //扫描容器
-  function getWorkorder(CONST fvApp_code: String): String;  //查询主线工单
+  function getLineWorkorder(CONST fvApp_code: String): String;  //查询主线工单
   function feedMaterial(CONST fvApp_code, fvBarcode: String): String;   //设备上料
-  function queryBadmod(CONST fvWorkcenter_id: Integer): String;
+  function getFeedMaterials(CONST fvApp_code: String): String;     //查询设备上料信息
+  function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;  //查询工单上工位的消耗信息
+  function queryBadmode(CONST fvWorkcenter_id: Integer): String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
+  function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
   gvApp_id : Integer;
   gvApp_code : String;
   gvApp_name : String;
+  gvApp_testing : Bool;
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
@@ -529,8 +533,8 @@ begin
             begin
               vStaff_code:= vResult.S['employee_code'];
               vStaff_name:= vResult.S['employee_name'];
-              gvStaff_code:= gvStaff_code + ',' + vStaff_code;
-              gvStaff_name:= gvStaff_name + ',' + vStaff_name;
+              gvStaff_code:= gvStaff_code + #13 + vStaff_code;
+              gvStaff_name:= gvStaff_name + #13 + vStaff_name;
             end;
         end;
       Result := True;
@@ -621,9 +625,9 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.container", "action_scanning", ["'+ fvBarcode +'"]]');
 end;
 
-function getWorkorder(CONST fvApp_code: String): String;
+function getLineWorkorder(CONST fvApp_code: String): String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "get_virtual_materiallist", ["'+ fvApp_code +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "get_virtual_materiallist", "'+ fvApp_code +'"]');
 end;
 
 function feedMaterial(CONST fvApp_code, fvBarcode: String): String;
@@ -631,7 +635,18 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "action_feed_onstationclient", ["'+ fvApp_code +'"], ["'+ fvBarcode +'"]]');
 end;
 
-function queryBadmod(CONST fvWorkcenter_id: Integer): String;    //获取不良模式
+function getFeedMaterials(CONST fvApp_code: String): String;  //查询设备上料信息
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "get_workstation_materiallist", "'+ fvApp_code +'"]');
+end;
+
+function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;   //工票工单开工
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder.consume", "loading_consumelist_onclient", ['+ IntToStr(fvWorkorder_id) +'], ['+ IntToStr(fvWorkcenter_id) +']]');
+end;
+
+
+function queryBadmode(CONST fvWorkcenter_id: Integer): String;    //获取不良模式
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.routing.badmode", "action_loading_badmodelist", ['+ IntToStr(fvWorkcenter_id) +']]');
 end;
@@ -644,6 +659,21 @@ end;
 function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
+end;
+
+function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
+var
+  vO : ISuperObject;
+begin
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ BoolToStr(fvOperation_pass) +', '+ fvOperate_result+']'));
+  if vO.B['result.success'] then  //上传设备数据成功
+    begin
+      Result := TRUE;
+    end
+  else
+    begin
+      Result := FALSE;
+    end;
 end;
 
 end.

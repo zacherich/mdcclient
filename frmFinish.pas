@@ -19,6 +19,10 @@ type
     lbl_product_code: TLabel;
     sbt_submit: TSpeedButton;
     dbg_badmode: TDBGrid;
+    lbl_tag_container_code: TLabel;
+    lbl_container_code: TLabel;
+    lbl_tag_container_name: TLabel;
+    lbl_container_name: TLabel;
     procedure sbt_submitClick(Sender: TObject);
   private
     { Private declarations }
@@ -113,7 +117,9 @@ begin
           ini_set.WriteString('job', 'workorder', '');
           ini_set.WriteInteger('job', 'doing_qty', 0);
           ini_set.UpdateFile;
+          gvDoing_qty:=0;
           frm_main.RefreshWorkorder;
+          frm_main.RefreshMaterials;
           self.Hide;
         end
       else
