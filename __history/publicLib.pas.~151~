@@ -40,20 +40,25 @@ uses
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
   function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;   //扫描工票工单
   function scanContainer(CONST fvBarcode: String): String;   //扫描容器
-  function getWorkorder(CONST fvApp_code: String): String;  //查询主线工单
+  function getLineWorkorder(CONST fvApp_code: String): String;  //查询主线工单
   function feedMaterial(CONST fvApp_code, fvBarcode: String): String;   //设备上料
   function getFeedMaterials(CONST fvApp_code: String): String;     //查询设备上料信息
   function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;  //查询工单上工位的消耗信息
   function queryBadmode(CONST fvWorkcenter_id: Integer): String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
-  function testingRecord(CONST fvSerialnumber : String; CONST operation_pass : Bool; CONST operate_result: String): String;   //保存测试数据
+  function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
   gvApp_id : Integer;
   gvApp_code : String;
   gvApp_name : String;
+  gvApp_testing : Bool;
+  gvTest_SN_field : String;
+  gvTest_result_field : String;
+  gvTest_pass_value : String;
+
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
@@ -116,7 +121,9 @@ var
   gvBadmode_qty : Currency;
   gvWeld_count : Integer;
   gvDoing_qty : Integer;
+  gvConsumelist : String;
   //统计变量
+  gvWorkorder_rowno : Integer;
   gvSucceed : Integer;
   gvFail : Integer;
 
@@ -547,7 +554,7 @@ var
   vA: TSuperArray;
 begin
   vO := SO(JsonRPCsearch_read(Aurl(gvServer_Host,gvServer_Port), gvDatabase, gvUserID, gvPassword, 'aas.equipment.equipment', '[["code","=","'+Trim(fvApp_code)+'"]]', '["id","code","name","active","mesline_id","workstation_id","state"]'));
-  vA := vO['result'].AsArray;
+  vA := vO.A['result'];
   if vA.Length=0 then
     begin
       Result := False;
@@ -624,9 +631,9 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.container", "action_scanning", ["'+ fvBarcode +'"]]');
 end;
 
-function getWorkorder(CONST fvApp_code: String): String;
+function getLineWorkorder(CONST fvApp_code: String): String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "get_virtual_materiallist", ["'+ fvApp_code +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "get_virtual_materiallist", "'+ fvApp_code +'"]');
 end;
 
 function feedMaterial(CONST fvApp_code, fvBarcode: String): String;
@@ -660,11 +667,11 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
-function testingRecord(CONST fvSerialnumber : String; CONST operation_pass : Bool; CONST operate_result: String): String;   //保存测试数据
+function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   vO : ISuperObject;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ operation_pass +', '+operate_result+']'));
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ BoolToStr(fvOperation_pass) +', '+ fvOperate_result+']'));
   if vO.B['result.success'] then  //上传设备数据成功
     begin
       Result := TRUE;

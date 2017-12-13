@@ -113,6 +113,7 @@ var
   gvContainer_id : Integer;
   gvContainer_code : String;
   gvContainer_name : String;
+  gvProduct_id : Integer;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
   gvSequence : Integer;

@@ -243,37 +243,51 @@ begin
       vO := SO(getLineWorkorder(gvApp_code));
       if vO.B['result.success'] then  //成功刷新主线子工单
         begin
-          gvWorkorder_id := vO.I['result.workorder_id'];
-          gvWorkorder_name := vO.S['result.workorder_name'];
-          vVirtuallist := vO.A['result.virtuallist'];
-          if vVirtuallist.Length>0 then   //存在有虚拟物料记录
+          if gvApp_testing then
             begin
-              with data_module.cds_workorder do
-                begin
-                  EmptyDataSet;
-                  for i := 0 to vVirtuallist.Length-1 do
-                    begin
-                      Append;
-                      vResult_v := SO(vVirtuallist[i].AsString);
-                      FieldByName('product_id').AsInteger := vResult_v.I['product_id'];
-                      FieldByName('product_code').AsString := vResult_v.S['product_code'];
-                      FieldByName('input_qty').AsFloat := vResult_v.C['input_qty'];
-                      FieldByName('todo_qty').AsFloat := vResult_v.C['todo_qty'];
-                      FieldByName('output_qty').AsFloat := vResult_v.C['output_qty'];
-                      FieldByName('actual_qty').AsFloat := vResult_v.C['actual_qty'];
-                      FieldByName('badmode_qty').AsFloat := vResult_v.C['badmode_qty'];
-                      if vResult_v.I['weld_count']=0 then FieldByName('weld_count').AsInteger := 1
-                      else FieldByName('weld_count').AsInteger := vResult_v.I['weld_count'];
-                      FieldByName('materiallist').AsString := vResult_v.S['materiallist'];
-                      Post;
-                    end;
-                end;
+              gvWorkorder_id := vO.I['result.workorder_id'];
+              gvWorkorder_name := vO.S['result.workorder_name'];
+              frm_main.lbl_wo.Caption := gvWorkorder_name;
+              gvProduct_id :=  vO.I['result.product_id'];
+              gvProduct_code := vO.S['result.product_code'];
+              frm_main.lbl_product_code.Caption := gvProduct_code;
+              gvInput_qty :=  vO.C['result.input_qty'];
+              frm_main.lbl_todo_qty.Caption := FloatToStr(gvInput_qty);
             end
           else
             begin
-              with data_module.cds_workorder do
+              gvWorkorder_id := vO.I['result.workorder_id'];
+              gvWorkorder_name := vO.S['result.workorder_name'];
+              vVirtuallist := vO.A['result.virtuallist'];
+              if vVirtuallist.Length>0 then   //存在有虚拟物料记录
                 begin
-                  EmptyDataSet;
+                  with data_module.cds_workorder do
+                    begin
+                      EmptyDataSet;
+                      for i := 0 to vVirtuallist.Length-1 do
+                        begin
+                          Append;
+                          vResult_v := SO(vVirtuallist[i].AsString);
+                          FieldByName('product_id').AsInteger := vResult_v.I['product_id'];
+                          FieldByName('product_code').AsString := vResult_v.S['product_code'];
+                          FieldByName('input_qty').AsFloat := vResult_v.C['input_qty'];
+                          FieldByName('todo_qty').AsFloat := vResult_v.C['todo_qty'];
+                          FieldByName('output_qty').AsFloat := vResult_v.C['output_qty'];
+                          FieldByName('actual_qty').AsFloat := vResult_v.C['actual_qty'];
+                          FieldByName('badmode_qty').AsFloat := vResult_v.C['badmode_qty'];
+                          if vResult_v.I['weld_count']=0 then FieldByName('weld_count').AsInteger := 1
+                          else FieldByName('weld_count').AsInteger := vResult_v.I['weld_count'];
+                          FieldByName('materiallist').AsString := vResult_v.S['materiallist'];
+                          Post;
+                        end;
+                    end;
+                end
+              else
+                begin
+                  with data_module.cds_workorder do
+                    begin
+                      EmptyDataSet;
+                    end;
                 end;
             end;
         end
