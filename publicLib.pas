@@ -55,6 +55,10 @@ var
   gvApp_code : String;
   gvApp_name : String;
   gvApp_testing : Bool;
+  gvTest_SN_field : String;
+  gvTest_result_field : String;
+  gvTest_pass_value : String;
+
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
@@ -548,7 +552,7 @@ var
   vA: TSuperArray;
 begin
   vO := SO(JsonRPCsearch_read(Aurl(gvServer_Host,gvServer_Port), gvDatabase, gvUserID, gvPassword, 'aas.equipment.equipment', '[["code","=","'+Trim(fvApp_code)+'"]]', '["id","code","name","active","mesline_id","workstation_id","state"]'));
-  vA := vO['result'].AsArray;
+  vA := vO.A['result'];
   if vA.Length=0 then
     begin
       Result := False;

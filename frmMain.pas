@@ -474,6 +474,10 @@ begin
   gvApp_code := ini_set.ReadString('equipment', 'app_code', gvApp_code);
   gvApp_secret := ini_set.ReadInteger('equipment', 'app_secret', gvApp_secret);
   gvApp_testing := ini_set.ReadBool('equipment', 'app_testing', gvApp_testing);
+  gvTest_SN_field := ini_set.ReadString('equipment', 'test_sn_field', gvTest_SN_field);
+  gvTest_result_field := ini_set.ReadString('equipment', 'test_result_field', gvTest_result_field);
+  gvTest_pass_value := ini_set.ReadString('equipment', 'test_pass_value', gvTest_pass_value);
+
 
   //取Redis服务器信息
   gvQueue_name := ini_set.ReadString('redis', 'queue_name', gvQueue_name);
@@ -683,7 +687,7 @@ var
   vList, vData : TStringList;
   vPath, vFileName : String;
   vFile : TFileStream;
-  vO : ISuperObject;
+  vO, vTest: ISuperObject;
   lvDataJson, lvMdcJson : String;
   i : integer;
 begin
@@ -754,6 +758,33 @@ begin
                       end).Start;
                       gvSucceed:=gvSucceed+1;
                       lbl_send_qty.Caption:=inttostr(gvSucceed);
+                      //判断是否是测试机,如果是,则提交测试机数据
+                      if gvApp_testing then
+                        begin
+                          vTest := SO(lvDataJson);
+                          if vTest.S[gvTest_result_field]=gvTest_pass_value then
+                            begin
+                              if testingRecord(vTest.S[gvTest_SN_field], TRUE, vTest.S[gvTest_result_field]) then
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end
+                              else
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end;
+                            end
+                          else
+                            begin
+                              if testingRecord(vTest.S[gvTest_SN_field], FALSE, vTest.S[gvTest_result_field]) then
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end
+                              else
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end;
+                            end;
+                        end;
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       //EnableControls;
                     except on e:Exception do
@@ -889,6 +920,7 @@ begin
   finally
     vList.Destroy;
     vData.Destroy;
+    vFile.Destroy;
   end;
 end;
 

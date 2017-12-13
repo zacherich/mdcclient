@@ -40,7 +40,7 @@ type
     spb_load_file: TSpeedButton;
     cmb_datatype: TComboBox;
     stg_header_line_set: TStringGrid;
-    sbt_equipment_check: TSpeedButton;
+    spb_equipment_check: TSpeedButton;
     lbl_app_secret: TLabel;
     ckb_subfolder: TCheckBox;
     lbl_tag_monitor: TLabel;
@@ -66,6 +66,12 @@ type
     lbl_port: TLabel;
     bdt_template: TBCEditor;
     ckb_testing: TCheckBox;
+    lbl_tag_serialnumber: TLabel;
+    lbl_tag_operation_pass: TLabel;
+    lbl_tag_operate_result: TLabel;
+    edt_test_sn_field: TEdit;
+    edt_test_result_field: TEdit;
+    edt_test_pass_value: TEdit;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
@@ -76,12 +82,13 @@ type
     procedure stg_header_line_setSelectCell(Sender: TObject; ACol,
       ARow: Integer; var CanSelect: Boolean);
     procedure FormShow(Sender: TObject);
-    procedure sbt_equipment_checkClick(Sender: TObject);
+    procedure spb_equipment_checkClick(Sender: TObject);
     procedure edt_app_codeChange(Sender: TObject);
     procedure rdg_filetypeClick(Sender: TObject);
     procedure spn_begin_lineChange(Sender: TObject);
     procedure spn_end_lineChange(Sender: TObject);
     procedure btn_confirmClick(Sender: TObject);
+    procedure ckb_testingClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -366,7 +373,7 @@ begin
     //设备信息保存
     ini_set.EraseSection('equipment');
     gvApp_id := StrToInt(lbl_app_id.Caption);
-    gvApp_code := edt_app_code.Text;
+    gvApp_code := Trim(edt_app_code.Text);
     ini_set.WriteString('equipment', 'app_code', gvApp_code);
     gvApp_name := lbl_app_name.Caption;
     if Length(Trim(edt_app_secret.Text))=0 then
@@ -374,8 +381,15 @@ begin
     else
       gvApp_secret := StrToInt(Trim(edt_app_secret.Text));
     ini_set.WriteInteger('equipment', 'app_secret', gvApp_secret);
+
     gvApp_testing := ckb_testing.Checked;
     ini_set.WriteBool('equipment', 'app_testing', gvApp_testing);
+    gvTest_SN_field := Trim(edt_test_sn_field.Text);
+    ini_set.WriteString('equipment', 'test_sn_field', gvTest_SN_field);
+    gvTest_result_field := Trim(edt_test_result_field.Text);
+    ini_set.WriteString('equipment', 'test_result_field', gvTest_result_field);
+    gvTest_pass_value := Trim(edt_test_pass_value.Text);
+    ini_set.WriteString('equipment', 'test_pass_value', gvTest_pass_value);
     ini_set.UpdateFile;
     //设备信息保存
     if Application.MessageBox(PChar('设备信息、数据采集配置成功,是否保存?'),'提示',MB_OKCANCEL)=IDOK then
@@ -385,10 +399,21 @@ begin
     end
   else
     begin
+      Application.MessageBox(PChar('设备信息需要验证，请先做验证！'),'错误',MB_ICONERROR);
       TabSheet1.Show;
       edt_app_code.SetFocus();
       edt_app_code.SelectAll();
     end;
+end;
+
+procedure Tfrm_set.ckb_testingClick(Sender: TObject);
+begin
+  lbl_tag_serialnumber.Visible := ckb_testing.Checked;
+  lbl_tag_operation_pass.Visible := ckb_testing.Checked;
+  lbl_tag_operate_result.Visible := ckb_testing.Checked;
+  edt_test_sn_field.Visible := ckb_testing.Checked;
+  edt_test_result_field.Visible := ckb_testing.Checked;
+  edt_test_pass_value.Visible := ckb_testing.Checked;
 end;
 
 procedure Tfrm_set.cmb_datatypeExit(Sender: TObject);
@@ -425,6 +450,12 @@ procedure Tfrm_set.FormShow(Sender: TObject);
 var vList : TStringList;
     vFile : TFileStream;
 begin
+  //显示设备信息
+  ckb_testing.Checked := gvApp_testing;
+  edt_test_sn_field.Text := gvTest_SN_field;
+  edt_test_result_field.Text := gvTest_result_field;
+  edt_test_pass_value.Text := gvTest_pass_value;
+
   //读取设备采集配置信息
   lbl_data_path.Caption := gvData_path;
   ckb_subfolder.Checked := gvSubfolder;
@@ -483,6 +514,7 @@ begin
         vList.Destroy;
       end;
     end;
+  ckb_testingClick(Self);  //显示测试机字段
 end;
 
 procedure Tfrm_set.lbl_data_pathClick(Sender: TObject);
@@ -714,11 +746,31 @@ begin
   end;
 end;
 
-procedure Tfrm_set.sbt_equipment_checkClick(Sender: TObject);
+procedure Tfrm_set.spb_equipment_checkClick(Sender: TObject);
 var
   vO, vResult: ISuperObject;
   vA: TSuperArray;
 begin
+  //测试机必填字段检查
+  if ckb_testing.Checked then
+    begin
+      if Trim(edt_test_sn_field.Text)='' then
+        begin
+          MessageBox(self.Handle, '测试机数据中的序列号字段必填，请输入!', '错误', MB_OK + MB_ICONERROR);
+          Exit;
+        end;
+      if Trim(edt_test_result_field.Text)='' then
+        begin
+          MessageBox(self.Handle, '测试机数据中的测试结果字段必填，请输入!', '错误', MB_OK + MB_ICONERROR);
+          Exit;
+        end;
+      if Trim(edt_test_pass_value.Text)='' then
+        begin
+          MessageBox(self.Handle, '测试机数据中的测试成功值必填，请输入!', '错误', MB_OK + MB_ICONERROR);
+          Exit;
+        end;
+    end;
+  //设备信息检查
   if Trim(edt_app_code.Text)='' then
     begin
       MessageBox(self.Handle, '设备编码必填，请输入!', '错误', MB_OK + MB_ICONERROR);

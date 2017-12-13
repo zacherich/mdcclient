@@ -190,7 +190,7 @@ object frm_set: Tfrm_set
         Font.Style = []
         ParentFont = False
       end
-      object sbt_equipment_check: TSpeedButton
+      object spb_equipment_check: TSpeedButton
         Left = 616
         Top = 84
         Width = 73
@@ -202,7 +202,7 @@ object frm_set: Tfrm_set
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
-        OnClick = sbt_equipment_checkClick
+        OnClick = spb_equipment_checkClick
       end
       object lbl_app_secret: TLabel
         Left = 508
@@ -287,6 +287,27 @@ object frm_set: Tfrm_set
         ParentFont = False
         Visible = False
       end
+      object lbl_tag_serialnumber: TLabel
+        Left = 293
+        Top = 368
+        Width = 96
+        Height = 19
+        Caption = #24207#21015#21495#23383#27573#65306
+      end
+      object lbl_tag_operation_pass: TLabel
+        Left = 293
+        Top = 407
+        Width = 112
+        Height = 19
+        Caption = #27979#35797#32467#26524#23383#27573#65306
+      end
+      object lbl_tag_operate_result: TLabel
+        Left = 293
+        Top = 448
+        Width = 96
+        Height = 19
+        Caption = #27979#35797#25104#21151#20540#65306
+      end
       object edt_app_secret: TEdit
         Left = 374
         Top = 84
@@ -311,12 +332,34 @@ object frm_set: Tfrm_set
         OnChange = edt_app_codeChange
       end
       object ckb_testing: TCheckBox
-        Left = 616
-        Top = 33
+        Left = 97
+        Top = 409
         Width = 84
         Height = 17
         Caption = #26159#27979#35797#26426
         TabOrder = 2
+        OnClick = ckb_testingClick
+      end
+      object edt_test_sn_field: TEdit
+        Left = 413
+        Top = 365
+        Width = 196
+        Height = 27
+        TabOrder = 3
+      end
+      object edt_test_result_field: TEdit
+        Left = 411
+        Top = 404
+        Width = 198
+        Height = 27
+        TabOrder = 4
+      end
+      object edt_test_pass_value: TEdit
+        Left = 411
+        Top = 445
+        Width = 198
+        Height = 27
+        TabOrder = 5
       end
     end
     object TabSheet2: TTabSheet
@@ -503,7 +546,7 @@ object frm_set: Tfrm_set
           MinValue = 1
           ParentFont = False
           TabOrder = 1
-          Value = 1
+          Value = 0
           OnChange = spn_header_lineChange
         end
         object cmb_datatype: TComboBox
@@ -587,7 +630,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 6
-          Value = 0
+          Value = 1
           OnChange = spn_end_lineChange
         end
         object spn_begin_line: TSpinEdit
@@ -598,7 +641,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 7
-          Value = 0
+          Value = 1
           OnChange = spn_begin_lineChange
         end
         object edt_queue_name: TEdit
@@ -657,6 +700,6 @@ object frm_set: Tfrm_set
   end
   object OpenDialog1: TOpenDialog
     Left = 684
-    Top = 400
+    Top = 281
   end
 end

@@ -747,6 +747,10 @@ object frm_main: Tfrm_main
     end
     object tst_collection: TTabSheet
       Caption = #37319#38598#25968#25454
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
