@@ -122,6 +122,7 @@ var
   gvWeld_count : Integer;
   gvDoing_qty : Integer;
   //统计变量
+  gvWorkorder_rowno : Integer;
   gvSucceed : Integer;
   gvFail : Integer;
 

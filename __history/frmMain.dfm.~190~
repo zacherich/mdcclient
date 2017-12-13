@@ -499,7 +499,7 @@ object frm_main: Tfrm_main
       Font.Style = [fsBold, fsUnderline]
       ParentFont = False
     end
-    object sbt_submit: TSpeedButton
+    object spb_submit: TSpeedButton
       Left = 347
       Top = 6
       Width = 65
@@ -541,9 +541,9 @@ object frm_main: Tfrm_main
         F5FFFAF8F5FFFAF8F5FFFAF7F5FFFAF6F4FFBB9286FF00000008947B72C0C7A6
         9AFFC7A69AFFC6A699FFC6A599FFC6A599FFC6A598FFC6A498FFC5A498FFC5A3
         97FFC5A397FFC5A396FFC4A296FFC4A195FF91776EC200000005}
-      OnClick = sbt_submitClick
+      OnClick = spb_submitClick
     end
-    object sbt_refresh: TSpeedButton
+    object spb_refresh: TSpeedButton
       Left = 426
       Top = 6
       Width = 65
@@ -600,7 +600,7 @@ object frm_main: Tfrm_main
       Height = 18
       Caption = '0'
     end
-    object sbt_start: TSpeedButton
+    object spb_start: TSpeedButton
       Left = 418
       Top = 6
       Width = 65
@@ -642,7 +642,7 @@ object frm_main: Tfrm_main
         0000000000000000000000000000000000000000000000000000000000000000
         0001000000040000000500000002000000010000000000000000000000000000
         0000000000000000000000000000000000000000000000000000}
-      OnClick = sbt_startClick
+      OnClick = spb_startClick
     end
   end
   object PageControl1: TPageControl
@@ -697,7 +697,8 @@ object frm_main: Tfrm_main
           Left = 1
           Top = 19
           Width = 513
-          Height = 30
+          Height = 181
+          Align = alClient
           DataSource = data_module.dsc_workorder
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
           TabOrder = 0
@@ -706,13 +707,8 @@ object frm_main: Tfrm_main
           TitleFont.Height = -15
           TitleFont.Name = 'Tahoma'
           TitleFont.Style = []
-        end
-        object Memo1: TMemo
-          Left = 1
-          Top = 55
-          Width = 512
-          Height = 114
-          TabOrder = 1
+          OnDrawColumnCell = dbg_workorderDrawColumnCell
+          OnDblClick = dbg_workorderDblClick
         end
       end
       object pnl_materiel: TPanel

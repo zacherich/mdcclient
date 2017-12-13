@@ -58,12 +58,12 @@ type
     dbg_workorder: TDBGrid;
     dbg_materiel: TDBGrid;
     stb_tipsbar: TStatusBar;
-    sbt_submit: TSpeedButton;
-    sbt_refresh: TSpeedButton;
+    spb_submit: TSpeedButton;
+    spb_refresh: TSpeedButton;
     Timer1: TTimer;
     lbl_tag_state: TLabel;
     lbl_state: TLabel;
-    sbt_start: TSpeedButton;
+    spb_start: TSpeedButton;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -71,10 +71,11 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure Timer1Timer(Sender: TObject);
-    procedure sbt_startClick(Sender: TObject);
-    procedure sbt_submitClick(Sender: TObject);
+    procedure spb_startClick(Sender: TObject);
+    procedure spb_submitClick(Sender: TObject);
     procedure RefreshWorkorder;
     procedure RefreshMaterials;
+    procedure RefreshStaff;
     procedure lbl_tag_equipmentDblClick(Sender: TObject);
   private
     { Private declarations }
@@ -239,8 +240,8 @@ begin
         begin
           log(DateTimeToStr(now())+', [ERROR] 生产线没有本道工位的工单，错误信息：'+vO.S['result.message']);
         end;
-      frm_main.sbt_start.Hide;
-      frm_main.sbt_refresh.Show;
+      frm_main.spb_start.Hide;
+      frm_main.spb_refresh.Show;
     end
   else if gvline_type='station' then
     begin
@@ -272,10 +273,25 @@ begin
         begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_barcode+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
         end;
-      frm_main.sbt_start.Show;
-      frm_main.sbt_refresh.Hide;
+      frm_main.spb_start.Show;
+      frm_main.spb_refresh.Hide;
     end;
 end;
+
+procedure Tfrm_main.RefreshStaff;
+begin
+  if queryStaffExist(gvApp_code) then  //设备上有操作工
+    begin
+      lbl_operator.Caption := gvStaff_code;
+      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
+    end
+  else  //设备上没有操作工
+    begin
+      lbl_operator.Caption := '';
+      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，没有有员工号在岗！');
+    end;
+end;
+
 
 procedure Tfrm_main.RefreshMaterials;
 var
@@ -456,6 +472,12 @@ begin
 
   //取设备设置信息
   gvApp_code := ini_set.ReadString('equipment', 'app_code', gvApp_code);
+  gvApp_secret := ini_set.ReadInteger('equipment', 'app_secret', gvApp_secret);
+  gvApp_testing := ini_set.ReadBool('equipment', 'app_testing', gvApp_testing);
+  gvTest_SN_field := ini_set.ReadString('equipment', 'test_sn_field', gvTest_SN_field);
+  gvTest_result_field := ini_set.ReadString('equipment', 'test_result_field', gvTest_result_field);
+  gvTest_pass_value := ini_set.ReadString('equipment', 'test_pass_value', gvTest_pass_value);
+
 
   //取Redis服务器信息
   gvQueue_name := ini_set.ReadString('redis', 'queue_name', gvQueue_name);
@@ -526,30 +548,12 @@ begin
               vO := SO(scanStaff(gvApp_code, uvInput));
               if vO.B['result.success'] then  //扫码打卡成功
                 begin
-                  if vO.S['result.action']='working' then  //操作工上岗
-                    begin
-                      vStaff_code := vO.S['result.employee_code'];
-                      vStaff_name := vO.S['result.employee_name'];
-                      log(DateTimeToStr(now())+', [INFO] 员工号【'+vStaff_code+'】的'+vStaff_name+'扫码上岗成功！');
-                    end
-                  else  //操作工离岗
-                    begin
-                      log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码离岗成功！');
-                    end;
-                  if queryStaffExist(gvApp_code) then  //设备上有操作工
-                    begin
-                      lbl_operator.Caption := gvStaff_code;
-                      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
-                    end
-                  else  //设备上没有操作工
-                    begin
-                      lbl_operator.Caption := '';
-                    end;
+                  RefreshStaff;
                 end
               else  //扫码打卡失败
                 begin
-                  log(DateTimeToStr(now())+', [INFO] 员工号【'+gvStaff_code+'】的'+gvStaff_name+'扫码打卡失败，错误信息：'+vO.S['result.message']);
-                  Application.MessageBox(PChar('扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                  log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败，错误信息：'+vO.S['result.message']);
+                  Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
                 end;
             end;
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
@@ -579,6 +583,7 @@ begin
                       gvLastworkcenter := vO.B['result.lastworkcenter'];
                       log(DateTimeToStr(now())+', [INFO] 工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的扫描成功成功！');
                       RefreshMaterials;   //扫描到工单后刷新材料信息
+                      RefreshStaff;
                     end
                   else
                     begin
@@ -630,13 +635,13 @@ begin
     begin
       if gvline_type='flowing' then
         begin
-         sbt_start.Hide;
-          sbt_refresh.Show;
+          spb_start.Hide;
+          spb_refresh.Show;
         end
       else if gvline_type='station' then
         begin
-          sbt_start.Show;
-          sbt_refresh.Hide;
+          spb_start.Show;
+          spb_refresh.Hide;
         end;
     end;
   if queryStaffExist(gvApp_code) then  //设备上有操作工
@@ -682,7 +687,7 @@ var
   vList, vData : TStringList;
   vPath, vFileName : String;
   vFile : TFileStream;
-  vO : ISuperObject;
+  vO, vTest: ISuperObject;
   lvDataJson, lvMdcJson : String;
   i : integer;
 begin
@@ -753,6 +758,33 @@ begin
                       end).Start;
                       gvSucceed:=gvSucceed+1;
                       lbl_send_qty.Caption:=inttostr(gvSucceed);
+                      //判断是否是测试机,如果是,则提交测试机数据
+                      if gvApp_testing then
+                        begin
+                          vTest := SO(lvDataJson);
+                          if vTest.S[gvTest_result_field]=gvTest_pass_value then
+                            begin
+                              if testingRecord(vTest.S[gvTest_SN_field], TRUE, vTest.S[gvTest_result_field]) then
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end
+                              else
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end;
+                            end
+                          else
+                            begin
+                              if testingRecord(vTest.S[gvTest_SN_field], FALSE, vTest.S[gvTest_result_field]) then
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end
+                              else
+                                begin
+                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                end;
+                            end;
+                        end;
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       //EnableControls;
                     except on e:Exception do
@@ -888,10 +920,11 @@ begin
   finally
     vList.Destroy;
     vData.Destroy;
+    vFile.Destroy;
   end;
 end;
 
-procedure Tfrm_main.sbt_startClick(Sender: TObject);
+procedure Tfrm_main.spb_startClick(Sender: TObject);
 var
   vO: ISuperObject;
 begin
@@ -908,12 +941,13 @@ begin
     end;
 end;
 
-procedure Tfrm_main.sbt_submitClick(Sender: TObject);
+procedure Tfrm_main.spb_submitClick(Sender: TObject);
 var
   vO, vResult: ISuperObject;
   vA: TSuperArray;
   i: Integer;
 begin
+  RefreshStaff;
   if gvStaff_code='' then
     begin
       Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);

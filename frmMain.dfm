@@ -650,10 +650,10 @@ object frm_main: Tfrm_main
     Top = 217
     Width = 523
     Height = 431
-    ActivePage = tst_workorder
+    ActivePage = tbs_workorder
     Align = alClient
     TabOrder = 2
-    object tst_workorder: TTabSheet
+    object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
       object Splitter1: TSplitter
@@ -707,6 +707,8 @@ object frm_main: Tfrm_main
           TitleFont.Height = -15
           TitleFont.Name = 'Tahoma'
           TitleFont.Style = []
+          OnDrawColumnCell = dbg_workorderDrawColumnCell
+          OnDblClick = dbg_workorderDblClick
         end
       end
       object pnl_materiel: TPanel
@@ -745,12 +747,8 @@ object frm_main: Tfrm_main
         end
       end
     end
-    object tst_collection: TTabSheet
+    object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
@@ -837,7 +835,7 @@ object frm_main: Tfrm_main
         end
       end
     end
-    object tst_log: TTabSheet
+    object tbs_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
       object lbx_log: TListBox

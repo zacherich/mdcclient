@@ -13,8 +13,8 @@ type
     pnl_top: TPanel;
     pnl_middle: TPanel;
     PageControl1: TPageControl;
-    tst_collection: TTabSheet;
-    tst_log: TTabSheet;
+    tbs_collection: TTabSheet;
+    tbs_log: TTabSheet;
     lbx_log: TListBox;
     dbg_collection: TDBGrid;
     pnl_collection: TPanel;
@@ -38,7 +38,7 @@ type
     lbl_good_qty: TLabel;
     lbl_bad_qty: TLabel;
     lbl_doing_qty: TLabel;
-    tst_workorder: TTabSheet;
+    tbs_workorder: TTabSheet;
     gpl_operator: TGridPanel;
     lbl_tag_operator: TLabel;
     lbl_operator: TLabel;
@@ -77,6 +77,9 @@ type
     procedure RefreshMaterials;
     procedure RefreshStaff;
     procedure lbl_tag_equipmentDblClick(Sender: TObject);
+    procedure dbg_workorderDrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure dbg_workorderDblClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -454,6 +457,33 @@ begin
     end;
 end;
 
+procedure Tfrm_main.dbg_workorderDblClick(Sender: TObject);
+begin
+  if gvDoing_qty = 0 then
+    begin
+      gvWorkorder_rowno := dbg_workorder.DataSource.DataSet.RecNo;
+    end
+  else
+    begin
+      if gvWorkorder_rowno <> dbg_workorder.DataSource.DataSet.RecNo then
+        begin
+          Application.MessageBox(PChar('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！'),'错误',MB_ICONERROR);
+          Exit;
+        end;
+    end;
+end;
+
+procedure Tfrm_main.dbg_workorderDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn; State: TGridDrawState);
+begin
+  if ((State = [gdSelected]) or (State=[gdSelected,gdFocused])) then
+      begin
+        dbg_workorder.Canvas.Font.Color :=ClYellow;
+        dbg_workorder.Canvas.Brush.Color :=clblue;  //关键
+        dbg_workorder.DefaultDrawColumnCell(Rect,DataCol,Column,State);
+   end;
+end;
+
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
 //  CanClose := False;
@@ -535,7 +565,6 @@ const
 var
   vFinish: DWORD;
   vO: ISuperObject;
-  vStaff_code, vStaff_name: String;
 begin
   if uvInput = '' then uvStart := GetTickCount();
   if (Length(uvInput) >= vInputLen) AND (Key=#13) then
@@ -633,17 +662,19 @@ begin
     end
   else
     begin
-      if gvline_type='flowing' then
-        begin
-          spb_start.Hide;
-          spb_refresh.Show;
-        end
-      else if gvline_type='station' then
-        begin
-          spb_start.Show;
-          spb_refresh.Hide;
-        end;
+      //
     end;
+  if gvline_type='flowing' then
+    begin
+      spb_start.Hide;
+      spb_refresh.Show;
+    end
+  else if gvline_type='station' then
+    begin
+      spb_start.Show;
+      spb_refresh.Hide;
+    end;
+  if gvApp_testing then tbs_workorder.TabVisible:=False else tbs_workorder.TabVisible:=True;
   if queryStaffExist(gvApp_code) then  //设备上有操作工
     begin
       lbl_operator.Caption := gvStaff_code;
@@ -742,7 +773,6 @@ begin
                       Post;
                       lvDataJson := CDS1LineToJson(data_module.cds_mdc);
                       lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                      Weld2yield;
                       TThread.CreateAnonymousThread(
                       procedure
                       var
@@ -784,6 +814,10 @@ begin
                                   log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
                                 end;
                             end;
+                        end
+                      else
+                        begin
+                          Weld2yield;
                         end;
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       //EnableControls;
@@ -953,7 +987,7 @@ begin
       Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if lbl_doing_qty.Caption = '0' then
+  if gvDoing_qty = 0 then
     begin
       Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
       Exit;
@@ -991,7 +1025,7 @@ begin
   frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
   if gvline_type='flowing' then    //主线上
     begin
-          //
+      frm_finish.Show;
     end
   else if gvline_type='station' then    //工作站
     begin
