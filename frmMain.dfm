@@ -585,6 +585,7 @@ object frm_main: Tfrm_main
         0002000000010000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000}
+      OnClick = spb_refreshClick
     end
     object lbl_tag_state: TLabel
       Left = 149
@@ -643,6 +644,20 @@ object frm_main: Tfrm_main
         0001000000040000000500000002000000010000000000000000000000000000
         0000000000000000000000000000000000000000000000000000}
       OnClick = spb_startClick
+    end
+    object lbl_tag_weld_count: TLabel
+      Left = 268
+      Top = 87
+      Width = 75
+      Height = 18
+      Caption = #28938#25509#27425#25968#65306
+    end
+    object lbl_weld_count: TLabel
+      Left = 340
+      Top = 87
+      Width = 8
+      Height = 18
+      Caption = '0'
     end
   end
   object PageControl1: TPageControl

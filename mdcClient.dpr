@@ -2,9 +2,9 @@
 
 uses
   Vcl.Forms,
-  frmSet in 'frmSet.pas' {frm_set},
   publicLib in 'publicLib.pas',
   frmMain in 'frmMain.pas' {frm_main},
+  frmSet in 'frmSet.pas' {frm_set},
   dataModule in 'dataModule.pas' {data_module: TDataModule},
   frmLogin in 'frmLogin.pas' {frm_login},
   frmFinish in 'frmFinish.pas' {frm_finish},

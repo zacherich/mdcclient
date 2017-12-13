@@ -43,56 +43,56 @@ begin
     begin
       FieldDefs.Clear;
       Close;
-      FieldDefs.Add('material_id', ftInteger, 0, True);  //原料编号
-      FieldDefs.Add('material_code', ftString, 25, True);  //原料编号
-      FieldDefs.Add('input_qty', ftFloat, 0, False);    //计划消耗数量
-      FieldDefs.Add('consume_qty', ftFloat, 0, False);  //消耗数量
-      FieldDefs.Add('material_qty', ftFloat, 0, False);   //工位数量
-      FieldDefs.Add('consume_unit', ftFloat, 0,False);  //单位消耗数量
-      FieldDefs.Add('leave_qty', ftFloat, 0, False);   //剩余数量
-      FieldDefs.Add('materiallot_id', ftInteger, 0, False);  //工位原料批号ID
-      FieldDefs.Add('materiallot_name', ftString, 20, False);  //工位原料批号
-      IndexDefs.Add('idx_material_id', 'material_id', [IxPrimary]);
+      FieldDefs.Add('product_id', ftInteger, 0, True);  //产品编号
+      FieldDefs.Add('product_code', ftString, 30, True);  //产品编号
+      FieldDefs.Add('input_qty', ftFloat, 0, False);    //计划数量
+      FieldDefs.Add('todo_qty', ftFloat, 0, False);   //待做数量
+      FieldDefs.Add('output_qty', ftFloat, 0, False);  //产出数量
+      FieldDefs.Add('actual_qty', ftFloat, 0,False);  //实做数量
+      FieldDefs.Add('badmode_qty', ftFloat, 0, False);   //不良数量
+      FieldDefs.Add('weld_count', ftInteger, 0, False);  //焊接次数
+      FieldDefs.Add('materiallist', ftString, 255, False);  //原料列表
+      IndexDefs.Add('idx_product_id', 'product_id', [IxPrimary]);
       CreateDataSet;
       Open;
     end;
   for i:=0 to frm_main.dbg_workorder.Columns.Count-1 do
     begin
-      if frm_main.dbg_workorder.Columns[i].FieldName='material_id' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='product_id' then
         begin
           frm_main.dbg_workorder.Columns[i].Visible := False;
         end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='material_code' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='product_code' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '原料编号';
-        end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='consume_unit' then
-        begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '单位消耗';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '产品编码';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='input_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '计划消耗';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '计划数量';
         end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='consume_qty' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='todo_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '已耗数量';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '待做数量';
         end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='leave_qty' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='output_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '待耗数量';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '产出数量';
         end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='material_qty' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='actual_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '上料数量';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '实做数量';
         end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='materiallot_id' then
+      if frm_main.dbg_workorder.Columns[i].FieldName='badmode_qty' then
+        begin
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '不良数量';
+        end;
+      if frm_main.dbg_workorder.Columns[i].FieldName='weld_count' then
+        begin
+          frm_main.dbg_workorder.Columns[i].Title.Caption := '焊接次数';
+        end;
+      if frm_main.dbg_workorder.Columns[i].FieldName='materiallist' then
         begin
           frm_main.dbg_workorder.Columns[i].Visible := False;
-        end;
-      if frm_main.dbg_workorder.Columns[i].FieldName='materiallot_name' then
-        begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '原料批号';
         end;
       frm_main.dbg_workorder.Columns[i].Title.Alignment := taCenter;
     end;
@@ -126,7 +126,7 @@ begin
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='material_code' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := '原料编号';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := '原料编码';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='consume_unit' then
         begin

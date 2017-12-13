@@ -121,6 +121,7 @@ var
   gvBadmode_qty : Currency;
   gvWeld_count : Integer;
   gvDoing_qty : Integer;
+  gvConsumelist : String;
   //统计变量
   gvWorkorder_rowno : Integer;
   gvSucceed : Integer;

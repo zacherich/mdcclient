@@ -64,6 +64,8 @@ type
     lbl_tag_state: TLabel;
     lbl_state: TLabel;
     spb_start: TSpeedButton;
+    lbl_tag_weld_count: TLabel;
+    lbl_weld_count: TLabel;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -74,12 +76,13 @@ type
     procedure spb_startClick(Sender: TObject);
     procedure spb_submitClick(Sender: TObject);
     procedure RefreshWorkorder;
-    procedure RefreshMaterials;
+    procedure RefreshMaterials(fvConsumelist : String = '');
     procedure RefreshStaff;
     procedure lbl_tag_equipmentDblClick(Sender: TObject);
     procedure dbg_workorderDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
     procedure dbg_workorderDblClick(Sender: TObject);
+    procedure spb_refreshClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -92,6 +95,7 @@ type
 
 var
   frm_main: Tfrm_main;
+  uvWeld_count : Integer = 0;
   uvInput : String;
   uvStart : DWORD;
 
@@ -230,14 +234,48 @@ end;
 
 procedure Tfrm_main.RefreshWorkorder;
 var
-  vO: ISuperObject;
+  vO, vResult_v: ISuperObject;
+  vVirtuallist : TSuperArray;
+  i : Integer;
 begin
   if gvline_type='flowing' then
     begin
       vO := SO(getLineWorkorder(gvApp_code));
-      if vO.B['result.success'] then  //成功刷新工单
+      if vO.B['result.success'] then  //成功刷新主线子工单
         begin
-
+          gvWorkorder_id := vO.I['result.workorder_id'];
+          gvWorkorder_name := vO.S['result.workorder_name'];
+          vVirtuallist := vO.A['result.virtuallist'];
+          if vVirtuallist.Length>0 then   //存在有虚拟物料记录
+            begin
+              with data_module.cds_workorder do
+                begin
+                  EmptyDataSet;
+                  for i := 0 to vVirtuallist.Length-1 do
+                    begin
+                      Append;
+                      vResult_v := SO(vVirtuallist[i].AsString);
+                      FieldByName('product_id').AsInteger := vResult_v.I['product_id'];
+                      FieldByName('product_code').AsString := vResult_v.S['product_code'];
+                      FieldByName('input_qty').AsFloat := vResult_v.C['input_qty'];
+                      FieldByName('todo_qty').AsFloat := vResult_v.C['todo_qty'];
+                      FieldByName('output_qty').AsFloat := vResult_v.C['output_qty'];
+                      FieldByName('actual_qty').AsFloat := vResult_v.C['actual_qty'];
+                      FieldByName('badmode_qty').AsFloat := vResult_v.C['badmode_qty'];
+                      if vResult_v.I['weld_count']=0 then FieldByName('weld_count').AsInteger := 1
+                      else FieldByName('weld_count').AsInteger := vResult_v.I['weld_count'];
+                      FieldByName('materiallist').AsString := vResult_v.S['materiallist'];
+                      Post;
+                    end;
+                end;
+            end
+          else
+            begin
+              with data_module.cds_workorder do
+                begin
+                  EmptyDataSet;
+                end;
+            end;
         end
       else  //刷新工单失败
         begin
@@ -296,7 +334,7 @@ begin
 end;
 
 
-procedure Tfrm_main.RefreshMaterials;
+procedure Tfrm_main.RefreshMaterials(fvConsumelist : String = '');
 var
   vO_c, vO_m, vResult_c, vResult_m: ISuperObject;
   vMaterials, vConsume : TSuperArray;
@@ -313,12 +351,20 @@ begin
       vO_m := SO('{"materiallist":[]}');
       vMaterials := vO_m.A['materiallist'];
     end;
-  if gvWorkorder_id>0 then  //当前有工单在制
+  if fvConsumelist='' then  //没有传入参数
     begin
-      vO_c := SO(getWorkordConsume(gvWorkorder_id, gvWorkcenter_id));
-      if vO_c.B['result.success'] then  //成功得到工单消耗明细
+      if gvWorkorder_id>0 then  //当前有工单在制
         begin
-          vConsume := vO_c.A['result.consumelist'];
+          vO_c := SO(getWorkordConsume(gvWorkorder_id, gvWorkcenter_id));
+          if vO_c.B['result.success'] then  //成功得到工单消耗明细
+            begin
+              vConsume := vO_c.A['result.consumelist'];
+            end
+          else
+            begin
+              vO_c := SO('{"consumelist":[]}');
+              vConsume := vO_c.A['consumelist'];
+            end;
         end
       else
         begin
@@ -328,7 +374,7 @@ begin
     end
   else
     begin
-      vO_c := SO('{"consumelist":[]}');
+      vO_c := SO(fvConsumelist);
       vConsume := vO_c.A['consumelist'];
     end;
   if (vConsume.Length<>0) or (vMaterials.Length<>0) then     //至少有消耗信息或上料信息
@@ -445,15 +491,22 @@ end;
 
 procedure Weld2yield;
 begin
-  gvWeld_count:=gvWeld_count+1;
-  if gvWeld_count=1 then
+  uvWeld_count := uvWeld_count + 1;
+  if uvWeld_count<gvWeld_count then
     begin
-      gvWeld_count:=0;
+      uvWeld_count := uvWeld_count + 1;
+    end
+  else
+    begin
       gvDoing_qty:=gvDoing_qty+1;
       frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
-      ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
-      ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
-      ini_set.UpdateFile;
+      if gvline_type='station' then
+        begin
+          ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
+          ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
+          ini_set.UpdateFile;
+        end;
+      uvWeld_count := 0;
     end;
 end;
 
@@ -461,7 +514,24 @@ procedure Tfrm_main.dbg_workorderDblClick(Sender: TObject);
 begin
   if gvDoing_qty = 0 then
     begin
-      gvWorkorder_rowno := dbg_workorder.DataSource.DataSet.RecNo;
+      if dbg_workorder.DataSource.DataSet.RecNo>0 then
+        begin
+          gvWorkorder_rowno := dbg_workorder.DataSource.DataSet.RecNo;
+          lbl_wo.Caption := gvWorkorder_name;
+          with data_module.cds_workorder do
+            begin
+              lbl_product_code.Caption := FieldByName('product_code').AsString;
+              lbl_todo_qty.Caption := FieldByName('input_qty').AsString;
+              // := FieldByName('todo_qty').AsFloat;
+              lbl_good_qty.Caption := FieldByName('output_qty').AsString;
+              lbl_done_qty.Caption := FieldByName('actual_qty').AsString;
+              lbl_bad_qty.Caption := FieldByName('badmode_qty').AsString;
+              gvWeld_count := FieldByName('weld_count').AsInteger;
+              lbl_weld_count.Caption := IntToStr(gvWeld_count);
+              gvConsumelist := '{"consumelist":' + FieldByName('materiallist').AsString + '}';
+            end;
+          RefreshMaterials(gvConsumelist);
+        end;
     end
   else
     begin
@@ -956,6 +1026,11 @@ begin
     vData.Destroy;
     vFile.Destroy;
   end;
+end;
+
+procedure Tfrm_main.spb_refreshClick(Sender: TObject);
+begin
+  RefreshWorkorder;
 end;
 
 procedure Tfrm_main.spb_startClick(Sender: TObject);

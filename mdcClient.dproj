@@ -110,13 +110,13 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="frmSet.pas">
-            <Form>frm_set</Form>
-        </DCCReference>
         <DCCReference Include="publicLib.pas"/>
         <DCCReference Include="frmMain.pas">
             <Form>frm_main</Form>
             <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="frmSet.pas">
+            <Form>frm_set</Form>
         </DCCReference>
         <DCCReference Include="dataModule.pas">
             <Form>data_module</Form>
