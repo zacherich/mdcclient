@@ -585,6 +585,7 @@ object frm_main: Tfrm_main
         0002000000010000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000}
+      OnClick = spb_refreshClick
     end
     object lbl_tag_state: TLabel
       Left = 149
@@ -657,6 +658,14 @@ object frm_main: Tfrm_main
       Width = 8
       Height = 18
       Caption = '0'
+    end
+    object BitBtn1: TBitBtn
+      Left = 368
+      Top = 34
+      Width = 75
+      Height = 25
+      Caption = 'BitBtn1'
+      TabOrder = 0
     end
   end
   object PageControl1: TPageControl

@@ -110,7 +110,7 @@ begin
     end
   else if gvline_type='station' then    //工作站
     begin
-      vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, StrToFloat(lbl_doing_qty.Caption), vBadmode_lines, gvContainer_id));
+      vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, gvDoing_qty, vBadmode_lines, gvContainer_id));
       if vO.B['result.success'] then  //报工成功
         begin
           frm_main.lbl_doing_qty.Caption:='0';

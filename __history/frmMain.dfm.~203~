@@ -585,6 +585,7 @@ object frm_main: Tfrm_main
         0002000000010000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000}
+      OnClick = spb_refreshClick
     end
     object lbl_tag_state: TLabel
       Left = 149
@@ -644,16 +645,30 @@ object frm_main: Tfrm_main
         0000000000000000000000000000000000000000000000000000}
       OnClick = spb_startClick
     end
+    object lbl_tag_weld_count: TLabel
+      Left = 268
+      Top = 87
+      Width = 75
+      Height = 18
+      Caption = #28938#25509#27425#25968#65306
+    end
+    object lbl_weld_count: TLabel
+      Left = 340
+      Top = 87
+      Width = 8
+      Height = 18
+      Caption = '0'
+    end
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 217
     Width = 523
     Height = 431
-    ActivePage = tst_workorder
+    ActivePage = tbs_workorder
     Align = alClient
     TabOrder = 2
-    object tst_workorder: TTabSheet
+    object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
       object Splitter1: TSplitter
@@ -708,6 +723,7 @@ object frm_main: Tfrm_main
           TitleFont.Name = 'Tahoma'
           TitleFont.Style = []
           OnDrawColumnCell = dbg_workorderDrawColumnCell
+          OnDblClick = dbg_workorderDblClick
         end
       end
       object pnl_materiel: TPanel
@@ -746,7 +762,7 @@ object frm_main: Tfrm_main
         end
       end
     end
-    object tst_collection: TTabSheet
+    object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
       object dbg_collection: TDBGrid
         Left = 0
@@ -834,7 +850,7 @@ object frm_main: Tfrm_main
         end
       end
     end
-    object tst_log: TTabSheet
+    object tbs_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
       object lbx_log: TListBox

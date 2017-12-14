@@ -21,11 +21,9 @@ type
     dbg_badmode: TDBGrid;
     lbl_tag_container_code: TLabel;
     lbl_container_code: TLabel;
-    Memo1: TMemo;
     lbl_tag_container_name: TLabel;
     lbl_container_name: TLabel;
     procedure sbt_submitClick(Sender: TObject);
-    procedure FormKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
   public
@@ -40,7 +38,7 @@ var
 
 implementation
 
-uses dataModule, publicLib, SuperObject;
+uses frmMain, dataModule, publicLib, SuperObject;
 
 {$R *.dfm}
 
@@ -54,7 +52,7 @@ begin
     with vDataset do
       begin
         if (not Active) or (IsEmpty) then
-          Result := '';
+          Result := '[]';
         Result := '[';
         DisableControls;
         Filter := 'badmode_qty>' + '0';
@@ -93,48 +91,6 @@ begin
   end;
 end;
 
-procedure Tfrm_finish.FormKeyPress(Sender: TObject; var Key: Char);
-const
-  vInputLen = 6;
-var
-  vFinish: DWORD;
-  vO: ISuperObject;
-begin
-  if uvInput = '' then uvStart := GetTickCount();
-  if (Length(uvInput) >= vInputLen) AND (Key=#13) then
-    begin
-      vFinish := GetTickCount();
-      if (vFinish - uvStart) / Length(uvInput) < 100 then
-        begin
-          if copy(uvInput,1,2)='AT' then  //扫描到的是容器
-            begin
-              memo1.Lines.Add(scanContainer(uvInput));
-              vO := SO(scanContainer(uvInput));
-              if vO.B['result.success'] then  //成功扫描到容器
-                begin
-                      gvContainer_id := vO.I['result.container_id'];
-                      gvContainer_code := vO.S['result.container_name'];
-                      gvContainer_name := vO.S['result.container_alias'];
-                      frm_finish.lbl_container_code.Caption := gvContainer_code;
-                      frm_finish.lbl_container_name.Caption := gvContainer_name;
-                      log(DateTimeToStr(now())+', [INFO] 容器号【'+gvContainer_code+'】的扫描成功成功！');
-                end
-              else  //扫描容器失败
-                begin
-                  log(DateTimeToStr(now())+', [ERROR]  容器号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫描失败，错误信息：'+vO.S['result.message']);
-                end;
-            end;
-        end
-      else
-        log(DateTimeToStr(now())+', [ERROR] 错误输入:' + uvInput);
-      uvInput := '';
-    end
-  else
-    begin
-      uvInput := uvInput + Key;
-    end;
-end;
-
 procedure Tfrm_finish.sbt_submitClick(Sender: TObject);
 var
   vBadmode_lines : String;
@@ -143,20 +99,10 @@ begin
   if lbl_bad_qty.Caption<>'0' then   //存在有不良模式,生产不良模式数组
     begin
       vBadmode_lines := BadmodeToJson(data_module.cds_badmode);
-      memo1.Lines.Add(IntTOStr(gvWorkticket_id));
-      memo1.Lines.Add(IntTOStr(gvApp_id));
-      memo1.Lines.Add(lbl_doing_qty.Caption);
-      memo1.Lines.Add(vBadmode_lines);
-      memo1.Lines.Add(IntTOStr(gvContainer_id));
     end
   else    //没有不良返回空数组
     begin
-      vBadmode_lines := '';
-      memo1.Lines.Add(IntTOStr(gvWorkticket_id));
-      memo1.Lines.Add(IntTOStr(gvApp_id));
-      memo1.Lines.Add(lbl_doing_qty.Caption);
-      memo1.Lines.Add(vBadmode_lines);
-      memo1.Lines.Add(IntTOStr(gvContainer_id));
+      vBadmode_lines := '[]';
     end;
   if gvline_type='flowing' then    //主线上
     begin
@@ -164,22 +110,22 @@ begin
     end
   else if gvline_type='station' then    //工作站
     begin
-      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+      vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, StrToFloat(lbl_doing_qty.Caption), vBadmode_lines, gvContainer_id));
+      if vO.B['result.success'] then  //报工成功
         begin
-          if lbl_container_code.Caption<>'无' then
-            begin
-              //vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, StrToFloat(lbl_doing_qty.Caption), vBadmode_lines, gvContainer_id));
-              //memo1.Lines.Add(vO.S['result']);
-
-            end
-          else
-            begin
-              Application.MessageBox(PChar('最后一道工序报工，必须扫描容器二维码！'),'错误',MB_ICONERROR);
-            end;
+          frm_main.lbl_doing_qty.Caption:='0';
+          ini_set.WriteString('job', 'workorder', '');
+          ini_set.WriteInteger('job', 'doing_qty', 0);
+          ini_set.UpdateFile;
+          gvDoing_qty:=0;
+          frm_main.RefreshWorkorder;
+          frm_main.RefreshMaterials;
+          self.Hide;
         end
       else
         begin
-          //
+          log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+          Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
         end;
     end;
 end;

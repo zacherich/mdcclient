@@ -95,6 +95,8 @@ type
 
 var
   frm_main: Tfrm_main;
+  uvStaff_tip_count : Integer = 0;
+  uvWorkorder_tip_count : Integer = 0;
   uvWeld_count : Integer = 0;
   uvInput : String;
   uvStart : DWORD;
@@ -247,9 +249,12 @@ begin
             begin
               gvWorkorder_id := vO.I['result.workorder_id'];
               gvWorkorder_name := vO.S['result.workorder_name'];
+              frm_main.lbl_wo.Caption := gvWorkorder_name;
               gvProduct_id :=  vO.I['result.product_id'];
               gvProduct_code := vO.S['result.product_code'];
+              frm_main.lbl_product_code.Caption := gvProduct_code;
               gvInput_qty :=  vO.C['result.input_qty'];
+              frm_main.lbl_todo_qty.Caption := FloatToStr(gvInput_qty);
             end
           else
             begin
@@ -478,7 +483,7 @@ begin
                   Append;
                   vResult_m := SO(vMaterials[m].AsString);
                   FieldByName('material_id').AsInteger := vResult_m.I['material_id'];
-                  FieldByName('materail_code').AsString := vResult_m.S['materail_code'];
+                  FieldByName('material_code').AsString := vResult_m.S['material_code'];
                   FieldByName('input_qty').AsFloat := 0;
                   FieldByName('consume_qty').AsFloat := 0;
                   FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
@@ -502,10 +507,10 @@ end;
 
 procedure Weld2yield;
 begin
-  uvWeld_count := uvWeld_count + 1;
+  Inc(uvWeld_count);
   if uvWeld_count<gvWeld_count then
     begin
-      uvWeld_count := uvWeld_count + 1;
+      Inc(uvWeld_count);
     end
   else
     begin
@@ -518,6 +523,49 @@ begin
           ini_set.UpdateFile;
         end;
       uvWeld_count := 0;
+    end;
+end;
+
+procedure Operation_check;
+begin
+  if gvStaff_code='' then
+    begin
+      Inc(uvStaff_tip_count);
+      if uvStaff_tip_count<4 then
+        begin
+          Application.MessageBox(PChar('当前没有操作员，请先扫操作工条码，再操作机台！'),'错误',MB_ICONERROR);
+        end
+      else
+        begin
+          uvStaff_tip_count := 0;
+        end;
+    end
+  else
+    begin
+      uvStaff_tip_count := 0;
+    end;
+  if gvWorkorder_id<=0 then
+    begin
+      if uvWorkorder_tip_count<4 then
+        begin
+          Inc(uvWorkorder_tip_count);
+          if gvline_type='flowing' then    //主线上
+            begin
+              Application.MessageBox(PChar('当前没有工单，请先刷新工单，再操作机台！'),'错误',MB_ICONERROR);
+            end
+          else if gvline_type='station' then    //工作站
+            begin
+              Application.MessageBox(PChar('当前没有工单，请先扫工单条码，再操作机台！'),'错误',MB_ICONERROR);
+            end;
+        end
+      else
+        begin
+          uvWorkorder_tip_count := 0;
+        end;
+    end
+  else
+    begin
+      uvWorkorder_tip_count := 0;
     end;
 end;
 
@@ -567,7 +615,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-//  CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -711,7 +759,8 @@ begin
               vO := SO(feedMaterial(gvApp_code, uvInput));
               if vO.B['result.success'] then  //扫码上料成功
                 begin
-                  RefreshMaterials;
+                  if gvline_type='flowing' then RefreshMaterials(gvConsumelist)
+                  else RefreshMaterials;
                   Application.MessageBox(PChar('[INFO] 物料标签号【'+uvInput+'】上料成功！'),'提示信息',MB_ICONINFORMATION);
                   log(DateTimeToStr(now())+', [INFO] 物料标签号【'+uvInput+'】上料成功，返回【'+vO.AsObject.S['result']);
                 end
@@ -735,10 +784,10 @@ end;
 procedure Tfrm_main.FormShow(Sender: TObject);
 begin
   RefreshEquipment;
+  RefreshWorkorder;
+  RefreshMaterials;
   if gvDoing_qty>0 then
     begin
-      RefreshWorkorder;
-      RefreshMaterials;
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
     end
   else
@@ -901,6 +950,7 @@ begin
                           Weld2yield;
                         end;
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                      Operation_check;
                       //EnableControls;
                     except on e:Exception do
                       begin
@@ -960,6 +1010,7 @@ begin
                       gvSucceed:=gvSucceed+1;
                       lbl_send_qty.Caption:=inttostr(gvSucceed);
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                      Operation_check;
                       //EnableControls;
                     except on e:Exception do
                       begin
@@ -1018,6 +1069,7 @@ begin
                       gvSucceed:=gvSucceed+1;
                       lbl_send_qty.Caption:=inttostr(gvSucceed);
                       log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                      Operation_check;
                       //EnableControls;
                     except on e:Exception do
                       begin
@@ -1035,7 +1087,6 @@ begin
   finally
     vList.Destroy;
     vData.Destroy;
-    vFile.Destroy;
   end;
 end;
 
@@ -1078,6 +1129,11 @@ begin
       Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
+  if gvWorkorder_id<=0 then
+    begin
+      Application.MessageBox(PChar('当前没有工单，不能报工！'),'错误',MB_ICONERROR);
+      Exit;
+    end;
   vO := SO(queryBadmode(gvWorkcenter_id));
   if vO.B['result.success'] then  //获取不良模式成功
     begin
@@ -1107,14 +1163,25 @@ begin
           EmptyDataSet;
         end;
     end;
-  frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
-  frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
   if gvline_type='flowing' then    //主线上
     begin
-      frm_finish.Show;
+      vO := SO(Virtual_FINISH(gvProduct_id,gvDoing_qty));
+      if vO.B['result.success'] then  //报工成功
+        begin
+          lbl_doing_qty.Caption:='0';
+          gvDoing_qty:=0;
+          RefreshMaterials(gvConsumelist);
+        end
+      else
+        begin
+          log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+          Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+        end;
     end
   else if gvline_type='station' then    //工作站
     begin
+      frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
+      frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
       if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
         begin
           frm_container.Show;

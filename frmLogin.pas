@@ -129,7 +129,6 @@ end;
 procedure Tfrm_login.btn_loginClick(Sender: TObject);
 begin
   Inc(uvTryTimes); //尝试登录的次数 + 1
-
   if CheckUserInfo(edt_database.Text, edt_username.Text, edt_password.Text) then
     begin
       //如果通过检查，返回OK

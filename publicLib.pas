@@ -47,6 +47,7 @@ uses
   function queryBadmode(CONST fvWorkcenter_id: Integer): String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
+  function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
   function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   ini_set : TMemIniFile;
@@ -639,7 +640,7 @@ end;
 
 function feedMaterial(CONST fvApp_code, fvBarcode: String): String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "action_feed_onstationclient", ["'+ fvApp_code +'"], ["'+ fvBarcode +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "action_feed_onstationclient", "'+ fvApp_code +'", "'+ fvBarcode +'"]');
 end;
 
 function getFeedMaterials(CONST fvApp_code: String): String;  //查询设备上料信息
@@ -666,6 +667,11 @@ end;
 function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
+end;
+
+function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "action_vtproduct_output", '+ IntToStr(gvStation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
 end;
 
 function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据

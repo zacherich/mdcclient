@@ -47,13 +47,19 @@ uses
   function queryBadmode(CONST fvWorkcenter_id: Integer): String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
-  function testingRecord(CONST fvSerialnumber : String; CONST operation_pass : Bool; CONST operate_result: String): String;   //保存测试数据
+  function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
+  function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
   gvApp_id : Integer;
   gvApp_code : String;
   gvApp_name : String;
+  gvApp_testing : Bool;
+  gvTest_SN_field : String;
+  gvTest_result_field : String;
+  gvTest_pass_value : String;
+
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
@@ -108,6 +114,7 @@ var
   gvContainer_id : Integer;
   gvContainer_code : String;
   gvContainer_name : String;
+  gvProduct_id : Integer;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
   gvSequence : Integer;
@@ -116,7 +123,9 @@ var
   gvBadmode_qty : Currency;
   gvWeld_count : Integer;
   gvDoing_qty : Integer;
+  gvConsumelist : String;
   //统计变量
+  gvWorkorder_rowno : Integer;
   gvSucceed : Integer;
   gvFail : Integer;
 
@@ -547,7 +556,7 @@ var
   vA: TSuperArray;
 begin
   vO := SO(JsonRPCsearch_read(Aurl(gvServer_Host,gvServer_Port), gvDatabase, gvUserID, gvPassword, 'aas.equipment.equipment', '[["code","=","'+Trim(fvApp_code)+'"]]', '["id","code","name","active","mesline_id","workstation_id","state"]'));
-  vA := vO['result'].AsArray;
+  vA := vO.A['result'];
   if vA.Length=0 then
     begin
       Result := False;
@@ -660,11 +669,16 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
-function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): String;   //保存测试数据
+function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "action_vtproduct_output", '+ IntToStr(gvStation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
+end;
+
+function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   vO : ISuperObject;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ fvOperation_pass +', '+operate_result+']'));
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ BoolToStr(fvOperation_pass) +', '+ fvOperate_result+']'));
   if vO.B['result.success'] then  //上传设备数据成功
     begin
       Result := TRUE;

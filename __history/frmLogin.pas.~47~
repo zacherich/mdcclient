@@ -1,4 +1,4 @@
-unit frmLogin;
+ï»¿unit frmLogin;
 
 interface
 
@@ -32,8 +32,6 @@ type
     spn_proxyport: TSpinEdit;
     lbl_database: TLabel;
     edt_database: TEdit;
-    BitBtn1: TBitBtn;
-    Memo1: TMemo;
     procedure FormCreate(Sender: TObject);
     procedure btn_loginClick(Sender: TObject);
     procedure btn_cancelClick(Sender: TObject);
@@ -42,7 +40,7 @@ type
     procedure btn_confirmClick(Sender: TObject);
     procedure ckb_proxyClick(Sender: TObject);
     procedure ckb_savepwdClick(Sender: TObject);
-    procedure BitBtn1Click(Sender: TObject);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
     uvTryTimes: Integer;
@@ -50,7 +48,7 @@ type
   public
     { Public declarations }
   end;
-  function Login: Boolean;  //µÇÂ¼º¯Êı
+  function Login: Boolean;  //ç™»å½•å‡½æ•°
 var
   frm_login: Tfrm_login;
 
@@ -62,22 +60,13 @@ uses publicLib, SuperObject;
 
 function Login: Boolean;
 begin
-  //¶¯Ì¬´´½¨µÇÂ¼´°¿Ú
+  //åŠ¨æ€åˆ›å»ºç™»å½•çª—å£
   with Tfrm_login.Create(nil) do
   begin
-    //Ö»ÓĞ·µ»ØOKµÄÊ±ºòÈÏÎªµÇÂ¼³É¹¦
+    //åªæœ‰è¿”å›OKçš„æ—¶å€™è®¤ä¸ºç™»å½•æˆåŠŸ
     Result := ShowModal() = mrOk;
     Free;
   end;
-end;
-
-procedure Tfrm_login.BitBtn1Click(Sender: TObject);
-var
-  vO: ISuperObject;
-begin
-  vO := SO(JsonRPClogin(Aurl(gvServer_Host,gvServer_Port), 'ndmes', edt_username.Text, edt_password.Text));
-  Memo1.Lines.Add(vO.S['result']);
-  showmessage('Ãû³ÆÊÇ£º'+GetCodeName('[', ']', 'µ¼ÏßÕûĞÎ876¡¾8[SP_000]',1));
 end;
 
 procedure Tfrm_login.btn_cancelClick(Sender: TObject);
@@ -91,35 +80,36 @@ var
 begin
   if Trim(edt_host.Text) = '' then
     begin
-      showmessage('·şÎñµØÖ·±ØĞëÉèÖÃ£¡');
+      showmessage('æœåŠ¡åœ°å€å¿…é¡»è®¾ç½®ï¼');
       Exit;
     end;
   {check port}
   if spn_port.Value = 0 then
     begin
-      showmessage('·şÎñ¶Ë¿ÚºÅ±ØĞëÉèÖÃ£¡');
+      showmessage('æœåŠ¡ç«¯å£å·å¿…é¡»è®¾ç½®ï¼');
       Exit;
     end;
   if Trim(edt_database.Text) = '' then
     begin
-      showmessage('ÕËÌ×Ãû³Æ±ØĞëÉèÖÃ£¡');
+      showmessage('è´¦å¥—åç§°å¿…é¡»è®¾ç½®ï¼');
       Exit;
     end;
   if ckb_proxy.Checked then
     begin
       if Trim(edt_proxyhost.Text) = '' then
         begin
-          showmessage('´úÀí·şÎñµØÖ·±ØĞëÉèÖÃ£¡');
+          showmessage('ä»£ç†æœåŠ¡åœ°å€å¿…é¡»è®¾ç½®ï¼');
           Exit;
         end;
       {check port}
       if spn_proxyport.Value = 0 then
         begin
-          showmessage('´úÀí·şÎñ¶Ë¿ÚºÅ±ØĞëÉèÖÃ£¡');
+          showmessage('ä»£ç†æœåŠ¡ç«¯å£å·å¿…é¡»è®¾ç½®ï¼');
           Exit;
         end;
       ini_set.WriteString('server', 'proxy_host', edt_proxyhost.Text);
       ini_set.Writeinteger('server', 'proxy_port', spn_proxyport.Value);
+      ini_set.UpdateFile;
     end;
   vResponse:= JsonRPCdblist(Aurl(Trim(edt_host.Text),spn_port.Value));
   if Pos(Trim(edt_database.Text),vResponse)>0 then
@@ -132,36 +122,37 @@ begin
     end
   else
     begin
-      showmessage('µÇÂ¼·şÎñÆ÷ĞÅÏ¢ÉèÖÃÓĞÎó£¬ÇëÖØĞÂÉèÖÃ£¡');
+      showmessage('ç™»å½•æœåŠ¡å™¨ä¿¡æ¯è®¾ç½®æœ‰è¯¯ï¼Œè¯·é‡æ–°è®¾ç½®ï¼');
     end;
 end;
 
 procedure Tfrm_login.btn_loginClick(Sender: TObject);
 begin
-  Inc(uvTryTimes); //³¢ÊÔµÇÂ¼µÄ´ÎÊı + 1
+  Inc(uvTryTimes); //å°è¯•ç™»å½•çš„æ¬¡æ•° + 1
 
   if CheckUserInfo(edt_database.Text, edt_username.Text, edt_password.Text) then
     begin
-      //Èç¹ûÍ¨¹ı¼ì²é£¬·µ»ØOK
+      //å¦‚æœé€šè¿‡æ£€æŸ¥ï¼Œè¿”å›OK
       Self.ModalResult := mrOk;
       if gvSave_PWD then
         begin
           ini_set.WriteBool('profile', 'save_pwd', gvSave_PWD);
           ini_set.WriteString('profile', 'user_name', gvUserName);
           ini_set.WriteString('profile', 'password', gvPassword);
+          ini_set.UpdateFile;
         end;
     end
   else
     begin
       if (uvTryTimes > 2) then
       begin
-        MessageBox(self.Handle, 'ÄãÒÑ¾­³¢ÊÔµÇÂ¼3´Î£¬ÇëÁªÏµÏµÍ³¹ÜÀíÔ±¡£', '´íÎó', MB_OK + MB_ICONERROR);
+        MessageBox(self.Handle, 'ä½ å·²ç»å°è¯•ç™»å½•3æ¬¡ï¼Œè¯·è”ç³»ç³»ç»Ÿç®¡ç†å‘˜ã€‚', 'é”™è¯¯', MB_OK + MB_ICONERROR);
         Self.ModalResult := mrCancel;
         Exit;
       end;
 
-      //Í¨²»¹ı£¬±¨´í
-      MessageBox(self.Handle, '´íÎóµÄÓÃ»§Ãû»òÃÜÂë£¬ÇëÖØĞÂÊäÈë!', '´íÎó', MB_OK + MB_ICONERROR);
+      //é€šä¸è¿‡ï¼ŒæŠ¥é”™
+      MessageBox(self.Handle, 'é”™è¯¯çš„ç”¨æˆ·åæˆ–å¯†ç ï¼Œè¯·é‡æ–°è¾“å…¥!', 'é”™è¯¯', MB_OK + MB_ICONERROR);
       edt_username.SetFocus();
       edt_username.SelectAll();
     end;
@@ -175,6 +166,7 @@ begin
   if vO.S['result']='false' then
     begin
       Result := FALSE;
+      log(DateTimeToStr(now())+', [Eror] ç™»é™†æœåŠ¡å™¨ï¼šè´¦å¥—åç§°'+fvDatabase+'ç”¨æˆ·å'+fvUserName, clRed);
     end
   else
     begin
@@ -183,13 +175,13 @@ begin
       except
         on E: Exception do
           begin
-            log(DateTimeToStr(now())+', [Exception] µÇÂ½·şÎñÆ÷£º'+StringReplace(E.Message, #13#10, ': ', [rfReplaceAll]));
+            log(DateTimeToStr(now())+', [Exception] ç™»é™†æœåŠ¡å™¨ï¼šè´¦å¥—åç§°'+StringReplace(E.Message, #13#10, ': ', [rfReplaceAll]));
             Result := FALSE;
           end;
       end;
       gvUserName:= fvUserName;
       gvPassword:= fvPassword;
-      log(DateTimeToStr(now())+', [Info] µÇÂ½·şÎñÆ÷£º'+fvUserName+'µÇÂ¼³É¹¦£¡', clGreen);
+      log(DateTimeToStr(now())+', [Info] ç™»é™†æœåŠ¡å™¨ï¼šè´¦å¥—åç§°'+fvDatabase+'ç”¨æˆ·å'+fvUserName+'ç™»å½•æˆåŠŸï¼', clGreen);
       Result := TRUE;
     end;
 end;
@@ -208,6 +200,11 @@ end;
 procedure Tfrm_login.FormCreate(Sender: TObject);
 begin
   uvTryTimes := 0;
+end;
+
+procedure Tfrm_login.FormKeyPress(Sender: TObject; var Key: Char);
+begin
+  if key=#13 then btn_login.Click;
 end;
 
 procedure Tfrm_login.FormShow(Sender: TObject);
