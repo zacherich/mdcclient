@@ -31,6 +31,10 @@ object frm_login: Tfrm_login
     object tbs_login: TTabSheet
       Caption = 'tbs_login'
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lbl_username: TLabel
         Left = 107
         Top = 101

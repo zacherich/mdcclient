@@ -30,7 +30,7 @@ object frm_set: Tfrm_set
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = TabSheet1
+    ActivePage = TabSheet2
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -651,12 +651,20 @@ object frm_set: Tfrm_set
           Height = 26
           TabOrder = 8
         end
-        object bdt_template: TBCEditor
+        object rdt_template: TRichEdit
           Left = 16
-          Top = 48
+          Top = 45
           Width = 680
-          Height = 120
+          Height = 125
+          Font.Charset = GB2312_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -15
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          ScrollBars = ssBoth
           TabOrder = 9
+          Zoom = 100
         end
       end
       object ckb_subfolder: TCheckBox

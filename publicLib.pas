@@ -1,4 +1,4 @@
-﻿unit publicLib;
+unit publicLib;
 
 interface
 uses

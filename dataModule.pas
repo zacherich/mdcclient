@@ -1,10 +1,9 @@
-unit dataModule;
+ï»¿unit dataModule;
 
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, System.Variants, Data.DB, Datasnap.DBClient, Vcl.Forms, IdTCPClient, IdTCPConnection,  IdComponent, IdBaseComponent,
-  Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Variants, Data.DB, Datasnap.DBClient, Vcl.Forms;
 
 type
   Tdata_module = class(TDataModule)
@@ -43,15 +42,15 @@ begin
     begin
       FieldDefs.Clear;
       Close;
-      FieldDefs.Add('product_id', ftInteger, 0, True);  //²úÆ·±àºÅ
-      FieldDefs.Add('product_code', ftString, 30, True);  //²úÆ·±àºÅ
-      FieldDefs.Add('input_qty', ftFloat, 0, False);    //¼Æ»®ÊıÁ¿
-      FieldDefs.Add('todo_qty', ftFloat, 0, False);   //´ı×öÊıÁ¿
-      FieldDefs.Add('output_qty', ftFloat, 0, False);  //²ú³öÊıÁ¿
-      FieldDefs.Add('actual_qty', ftFloat, 0,False);  //Êµ×öÊıÁ¿
-      FieldDefs.Add('badmode_qty', ftFloat, 0, False);   //²»Á¼ÊıÁ¿
-      FieldDefs.Add('weld_count', ftInteger, 0, False);  //º¸½Ó´ÎÊı
-      FieldDefs.Add('materiallist', ftString, 255, False);  //Ô­ÁÏÁĞ±í
+      FieldDefs.Add('product_id', ftInteger, 0, True);  //äº§å“ç¼–å·
+      FieldDefs.Add('product_code', ftString, 30, True);  //äº§å“ç¼–å·
+      FieldDefs.Add('input_qty', ftFloat, 0, False);    //è®¡åˆ’æ•°é‡
+      FieldDefs.Add('todo_qty', ftFloat, 0, False);   //å¾…åšæ•°é‡
+      FieldDefs.Add('output_qty', ftFloat, 0, False);  //äº§å‡ºæ•°é‡
+      FieldDefs.Add('actual_qty', ftFloat, 0,False);  //å®åšæ•°é‡
+      FieldDefs.Add('badmode_qty', ftFloat, 0, False);   //ä¸è‰¯æ•°é‡
+      FieldDefs.Add('weld_count', ftInteger, 0, False);  //ç„Šæ¥æ¬¡æ•°
+      FieldDefs.Add('materiallist', ftString, 255, False);  //åŸæ–™åˆ—è¡¨
       IndexDefs.Add('idx_product_id', 'product_id', [IxPrimary]);
       CreateDataSet;
       Open;
@@ -64,31 +63,31 @@ begin
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='product_code' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '²úÆ·±àÂë';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'äº§å“ç¼–ç ';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='input_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '¼Æ»®ÊıÁ¿';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'è®¡åˆ’æ•°é‡';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='todo_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '´ı×öÊıÁ¿';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'å¾…åšæ•°é‡';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='output_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '²ú³öÊıÁ¿';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'äº§å‡ºæ•°é‡';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='actual_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := 'Êµ×öÊıÁ¿';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'å®åšæ•°é‡';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='badmode_qty' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := '²»Á¼ÊıÁ¿';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'ä¸è‰¯æ•°é‡';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='weld_count' then
         begin
-          frm_main.dbg_workorder.Columns[i].Title.Caption := 'º¸½Ó´ÎÊı';
+          frm_main.dbg_workorder.Columns[i].Title.Caption := 'ç„Šæ¥æ¬¡æ•°';
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='materiallist' then
         begin
@@ -105,15 +104,15 @@ begin
     begin
       FieldDefs.Clear;
       Close;
-      FieldDefs.Add('material_id', ftInteger, 0, True);  //Ô­ÁÏ±àºÅ
-      FieldDefs.Add('material_code', ftString, 25, True);  //Ô­ÁÏ±àºÅ
-      FieldDefs.Add('input_qty', ftFloat, 0, False);    //¼Æ»®ÏûºÄÊıÁ¿
-      FieldDefs.Add('consume_qty', ftFloat, 0, False);  //ÏûºÄÊıÁ¿
-      FieldDefs.Add('material_qty', ftFloat, 0, False);   //¹¤Î»ÊıÁ¿
-      FieldDefs.Add('consume_unit', ftFloat, 0,False);  //µ¥Î»ÏûºÄÊıÁ¿
-      FieldDefs.Add('leave_qty', ftFloat, 0, False);   //Ê£ÓàÊıÁ¿
-      FieldDefs.Add('materiallot_id', ftInteger, 0, False);  //¹¤Î»Ô­ÁÏÅúºÅID
-      FieldDefs.Add('materiallot_name', ftString, 20, False);  //¹¤Î»Ô­ÁÏÅúºÅ
+      FieldDefs.Add('material_id', ftInteger, 0, True);  //åŸæ–™ç¼–å·
+      FieldDefs.Add('material_code', ftString, 25, True);  //åŸæ–™ç¼–å·
+      FieldDefs.Add('input_qty', ftFloat, 0, False);    //è®¡åˆ’æ¶ˆè€—æ•°é‡
+      FieldDefs.Add('consume_qty', ftFloat, 0, False);  //æ¶ˆè€—æ•°é‡
+      FieldDefs.Add('material_qty', ftFloat, 0, False);   //å·¥ä½æ•°é‡
+      FieldDefs.Add('consume_unit', ftFloat, 0,False);  //å•ä½æ¶ˆè€—æ•°é‡
+      FieldDefs.Add('leave_qty', ftFloat, 0, False);   //å‰©ä½™æ•°é‡
+      FieldDefs.Add('materiallot_id', ftInteger, 0, False);  //å·¥ä½åŸæ–™æ‰¹å·ID
+      FieldDefs.Add('materiallot_name', ftString, 20, False);  //å·¥ä½åŸæ–™æ‰¹å·
       IndexDefs.Add('idx_material_id', 'material_id', [IxPrimary]);
       CreateDataSet;
       Open;
@@ -126,27 +125,27 @@ begin
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='material_code' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := 'Ô­ÁÏ±àÂë';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'åŸæ–™ç¼–ç ';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='consume_unit' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := 'µ¥Î»ÏûºÄ';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'å•ä½æ¶ˆè€—';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='input_qty' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := '¼Æ»®ÏûºÄ';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'è®¡åˆ’æ¶ˆè€—';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='consume_qty' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := 'ÒÑºÄÊıÁ¿';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'å·²è€—æ•°é‡';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='leave_qty' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := '´ıºÄÊıÁ¿';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'å¾…è€—æ•°é‡';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='material_qty' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := 'ÉÏÁÏÊıÁ¿';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'ä¸Šæ–™æ•°é‡';
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='materiallot_id' then
         begin
@@ -154,7 +153,7 @@ begin
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='materiallot_name' then
         begin
-          frm_main.dbg_materiel.Columns[i].Title.Caption := 'Ô­ÁÏÅúºÅ';
+          frm_main.dbg_materiel.Columns[i].Title.Caption := 'åŸæ–™æ‰¹å·';
         end;
       frm_main.dbg_materiel.Columns[i].Title.Alignment := taCenter;
     end;
@@ -192,11 +191,11 @@ begin
         end;
       if frm_finish.dbg_badmode.Columns[i].FieldName='badmode_name' then
         begin
-          frm_finish.dbg_badmode.Columns[i].Title.Caption := '²»Á¼Ä£Ê½';
+          frm_finish.dbg_badmode.Columns[i].Title.Caption := 'ä¸è‰¯æ¨¡å¼';
         end;
       if frm_finish.dbg_badmode.Columns[i].FieldName='badmode_qty' then
         begin
-          frm_finish.dbg_badmode.Columns[i].Title.Caption := 'ÊıÁ¿';
+          frm_finish.dbg_badmode.Columns[i].Title.Caption := 'æ•°é‡';
         end;
       frm_finish.dbg_badmode.Columns[i].Title.Alignment := taCenter;
     end;
@@ -208,7 +207,7 @@ begin
     begin
       if data_module.cds_badmode.Aggregates.Items[0].Value>StrToInt(frm_finish.lbl_doing_qty.Caption) then
         begin
-          Application.MessageBox(PChar('²»ºÏ¸ñÊıÁ¿²»ÄÜ³¬¹ı´ı±¨¹¤ÊıÁ¿£¡'),'´íÎó',MB_ICONERROR);
+          Application.MessageBox(PChar('ä¸åˆæ ¼æ•°é‡ä¸èƒ½è¶…è¿‡å¾…æŠ¥å·¥æ•°é‡ï¼'),'é”™è¯¯',MB_ICONERROR);
         end
       else
         begin

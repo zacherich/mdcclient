@@ -44,10 +44,10 @@ begin
       vFinish := GetTickCount();
       if (vFinish - uvStart) / Length(uvInput) < 100 then
         begin
-          if copy(uvInput,1,2)='AT' then  //É¨Ãèµ½µÄÊÇÈÝÆ÷
+          if copy(uvInput,1,2)='AT' then  //æ‰«æåˆ°çš„æ˜¯å®¹å™¨
             begin
               vO := SO(scanContainer(uvInput));
-              if vO.B['result.success'] then  //³É¹¦É¨Ãèµ½ÈÝÆ÷
+              if vO.B['result.success'] then  //æˆåŠŸæ‰«æåˆ°å®¹å™¨
                 begin
                   gvContainer_id := vO.I['result.container_id'];
                   gvContainer_code := vO.S['result.container_name'];
@@ -56,18 +56,18 @@ begin
                   lbl_container_name.Caption := gvContainer_name;
                   frm_finish.lbl_container_code.Caption := gvContainer_code;
                   frm_finish.lbl_container_name.Caption := gvContainer_name;
-                  log(DateTimeToStr(now())+', [INFO] ÈÝÆ÷ºÅ¡¾'+gvContainer_code+'¡¿µÄÉ¨Ãè³É¹¦³É¹¦£¡');
+                  log(DateTimeToStr(now())+', [INFO] å®¹å™¨å·ã€'+gvContainer_code+'ã€‘çš„æ‰«ææˆåŠŸæˆåŠŸï¼');
                   Self.Hide;
                   frm_finish.Show;
                 end
-              else  //É¨ÃèÈÝÆ÷Ê§°Ü
+              else  //æ‰«æå®¹å™¨å¤±è´¥
                 begin
-                  log(DateTimeToStr(now())+', [ERROR]  ÈÝÆ÷ºÅ¡¾'+copy(uvInput,3,Length(uvInput)-2)+'¡¿É¨ÃèÊ§°Ü£¬´íÎóÐÅÏ¢£º'+vO.S['result.message']);
+                  log(DateTimeToStr(now())+', [ERROR]  å®¹å™¨å·ã€'+copy(uvInput,3,Length(uvInput)-2)+'ã€‘æ‰«æå¤±è´¥ï¼Œé”™è¯¯ä¿¡æ¯ï¼š'+vO.S['result.message']);
                 end;
             end;
         end
       else
-        log(DateTimeToStr(now())+', [ERROR] ´íÎóÊäÈë:' + uvInput);
+        log(DateTimeToStr(now())+', [ERROR] é”™è¯¯è¾“å…¥:' + uvInput);
       uvInput := '';
     end
   else
@@ -78,8 +78,8 @@ end;
 
 procedure Tfrm_container.FormShow(Sender: TObject);
 begin
-  lbl_container_code.Caption := 'ÎÞ';
-  lbl_container_name.Caption := 'ÎÞ';
+  lbl_container_code.Caption := 'æ— ';
+  lbl_container_name.Caption := 'æ— ';
 end;
 
 end.

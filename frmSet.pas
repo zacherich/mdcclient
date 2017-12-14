@@ -5,8 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.IniFiles,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.FileCtrl,
-  Vcl.Samples.Spin, Vcl.Buttons, Vcl.Grids, BCEditor,
-  Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
+  Vcl.Samples.Spin, Vcl.Buttons, Vcl.Grids, Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
 
 type
   Tfrm_set = class(TForm)
@@ -64,7 +63,6 @@ type
     lbl_tag_port: TLabel;
     lbl_host: TLabel;
     lbl_port: TLabel;
-    bdt_template: TBCEditor;
     ckb_testing: TCheckBox;
     lbl_tag_serialnumber: TLabel;
     lbl_tag_operation_pass: TLabel;
@@ -72,6 +70,7 @@ type
     edt_test_sn_field: TEdit;
     edt_test_result_field: TEdit;
     edt_test_pass_value: TEdit;
+    rdt_template: TRichEdit;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
@@ -466,7 +465,7 @@ begin
   lbl_template_file.Caption := gvTemplate_file;
   if FileExists(lbl_template_file.Caption) then
     begin
-      bdt_template.Lines.Clear;
+      rdt_template.Lines.Clear;
       vList := TStringList.Create;
       try
         vFile := TFileStream.Create(lbl_template_file.Caption, fmOpenRead);
@@ -475,37 +474,37 @@ begin
           0://普通文本文件
           begin
             //if (vList.Count>0) and (vList.Count<100) then
-              bdt_template.Lines.Text:=vList.Text;
+              rdt_template.Lines.Text:=vList.Text;
             //else
             //  begin
             //    for i := 0 to 10 do
             //      begin
-            //        bdt_template.Lines.Add(vList[i]);
+            //        rdt_template.Lines.Add(vList[i]);
             //      end;
             //  end;
             spn_header_line.MinValue:=1;
-            spn_header_line.MaxValue:=bdt_template.Lines.Count;
+            spn_header_line.MaxValue:=rdt_template.Lines.Count;
           end;
           1://扭矩焊文件
           begin
             if vList.Count>0 then
               begin
-                bdt_template.Lines.Text := vList.Text;
+                rdt_template.Lines.Text := vList.Text;
                 spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=bdt_template.Lines.Count;
+                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
                 spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=bdt_template.Lines.Count;
+                spn_end_line.MaxValue:=rdt_template.Lines.Count;
               end;
           end;
           2://极柱焊文件
           begin
             if vList.Count>0 then
               begin
-                bdt_template.Lines.Text := vList.Text;
+                rdt_template.Lines.Text := vList.Text;
                 spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=bdt_template.Lines.Count;
+                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
                 spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=bdt_template.Lines.Count;
+                spn_end_line.MaxValue:=rdt_template.Lines.Count;
               end;
           end;
         end;
@@ -538,7 +537,7 @@ begin
   if OpenDialog1.FileName<>'' then
     begin
       lbl_template_file.Caption:=OpenDialog1.FileName;
-      bdt_template.Lines.Clear;
+      rdt_template.Lines.Clear;
       vList := TStringList.Create ;
       try
         vFile := TFileStream.Create(lbl_template_file.Caption, fmOpenRead);
@@ -547,37 +546,37 @@ begin
           0://普通文本文件
           begin
             //if (vList.Count>0) and (vList.Count<100) then
-            bdt_template.Lines.Text:=vList.Text;
+            rdt_template.Lines.Text:=vList.Text;
             //else
             //  begin
             //    for i := 0 to 10 do
             //      begin
-            //        bdt_template.Lines.Add(vList[i]);
+            //        rdt_template.Lines.Add(vList[i]);
             //      end;
             //  end;
             spn_header_line.MinValue:=1;
-            spn_header_line.MaxValue:=bdt_template.Lines.Count;
+            spn_header_line.MaxValue:=rdt_template.Lines.Count;
           end;
           1://扭矩焊文件
           begin
             if vList.Count>0 then
               begin
-                bdt_template.Lines.Text := vList.Text;
+                rdt_template.Lines.Text := vList.Text;
                 spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=bdt_template.Lines.Count;
+                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
                 spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=bdt_template.Lines.Count;
+                spn_end_line.MaxValue:=rdt_template.Lines.Count;
               end;
           end;
           2://极柱焊文件
           begin
             if vList.Count>0 then
               begin
-                bdt_template.Lines.Text := vList.Text;
+                rdt_template.Lines.Text := vList.Text;
                 spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=bdt_template.Lines.Count;
+                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
                 spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=bdt_template.Lines.Count;
+                spn_end_line.MaxValue:=rdt_template.Lines.Count;
               end;
           end;
         end;
@@ -651,7 +650,7 @@ begin
           vList.Delimiter := ' ';
         end;
         if spn_header_line.Value>0 then
-          vList.DelimitedText := bdt_template.Lines[spn_header_line.Value-1];
+          vList.DelimitedText := rdt_template.Lines[spn_header_line.Value-1];
         if vList.Count>0 then
           begin
             //设置stg_header_line_set基本属性
@@ -682,7 +681,7 @@ begin
           begin
             for i := spn_begin_line.Value-1 to spn_end_line.Value-1 do
               begin
-                vList.Add(bdt_template.Lines[i]);
+                vList.Add(rdt_template.Lines[i]);
               end;
             if vList.Text<>'' then vO := XMLParseString(vList.Text,true) else Exit;
             if vO.asObject.Count>0 then
@@ -718,7 +717,7 @@ begin
           begin
             for i := spn_begin_line.Value-1 to spn_end_line.Value-1 do
               begin
-                vList.Add(bdt_template.Lines[i]);
+                vList.Add(rdt_template.Lines[i]);
               end;
             if vList.Count>0 then
               begin
@@ -811,7 +810,7 @@ begin
       Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if spn_begin_line.Value>bdt_template.Lines.Count then
+  if spn_begin_line.Value>rdt_template.Lines.Count then
     Application.MessageBox(PChar('超出模板文件行数，请重新设置！'),'错误',MB_ICONERROR)
   else
     begin
@@ -827,7 +826,7 @@ begin
       Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if spn_begin_line.Value>bdt_template.Lines.Count then
+  if spn_begin_line.Value>rdt_template.Lines.Count then
     Application.MessageBox(PChar('超出模板文件行数，请重新设置！'),'错误',MB_ICONERROR)
   else
     begin
@@ -843,7 +842,7 @@ begin
       Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if spn_header_line.Value>bdt_template.Lines.Count then
+  if spn_header_line.Value>rdt_template.Lines.Count then
     Application.MessageBox(PChar('超出模板文件行数，请重新设置！'),'错误',MB_ICONERROR)
   else
     begin

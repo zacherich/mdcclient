@@ -96,22 +96,22 @@ var
   vBadmode_lines : String;
   vO: ISuperObject;
 begin
-  if lbl_bad_qty.Caption<>'0' then   //´æÔÚÓĞ²»Á¼Ä£Ê½,Éú²ú²»Á¼Ä£Ê½Êı×é
+  if lbl_bad_qty.Caption<>'0' then   //å­˜åœ¨æœ‰ä¸è‰¯æ¨¡å¼,ç”Ÿäº§ä¸è‰¯æ¨¡å¼æ•°ç»„
     begin
       vBadmode_lines := BadmodeToJson(data_module.cds_badmode);
     end
-  else    //Ã»ÓĞ²»Á¼·µ»Ø¿ÕÊı×é
+  else    //æ²¡æœ‰ä¸è‰¯è¿”å›ç©ºæ•°ç»„
     begin
       vBadmode_lines := '[]';
     end;
-  if gvline_type='flowing' then    //Ö÷ÏßÉÏ
+  if gvline_type='flowing' then    //ä¸»çº¿ä¸Š
     begin
       //
     end
-  else if gvline_type='station' then    //¹¤×÷Õ¾
+  else if gvline_type='station' then    //å·¥ä½œç«™
     begin
       vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, gvDoing_qty, vBadmode_lines, gvContainer_id));
-      if vO.B['result.success'] then  //±¨¹¤³É¹¦
+      if vO.B['result.success'] then  //æŠ¥å·¥æˆåŠŸ
         begin
           frm_main.lbl_doing_qty.Caption:='0';
           ini_set.WriteString('job', 'workorder', '');
@@ -124,8 +124,8 @@ begin
         end
       else
         begin
-          log(DateTimeToStr(now())+', [ERROR]  ¹¤µ¥ºÅ¡¾'+gvWorkorder_name+'¡¿±¨¹¤Ê§°Ü£¬´íÎóĞÅÏ¢£º'+vO.S['result.message']);
-          Application.MessageBox(PChar('¹¤µ¥ºÅ¡¾'+gvWorkorder_name+'¡¿±¨¹¤Ê§°Ü£¬´íÎóĞÅÏ¢£º'+vO.S['result.message']+'£¡'),'´íÎó',MB_ICONERROR);
+          log(DateTimeToStr(now())+', [ERROR]  å·¥å•å·ã€'+gvWorkorder_name+'ã€‘æŠ¥å·¥å¤±è´¥ï¼Œé”™è¯¯ä¿¡æ¯ï¼š'+vO.S['result.message']);
+          Application.MessageBox(PChar('å·¥å•å·ã€'+gvWorkorder_name+'ã€‘æŠ¥å·¥å¤±è´¥ï¼Œé”™è¯¯ä¿¡æ¯ï¼š'+vO.S['result.message']+'ï¼'),'é”™è¯¯',MB_ICONERROR);
         end;
     end;
 end;
