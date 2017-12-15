@@ -1,4 +1,4 @@
-unit frmFinish;
+﻿unit frmFinish;
 
 interface
 
@@ -24,6 +24,7 @@ type
     lbl_tag_container_name: TLabel;
     lbl_container_name: TLabel;
     procedure sbt_submitClick(Sender: TObject);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
   public
@@ -89,6 +90,11 @@ begin
   finally
     vDataset.EnableControls;
   end;
+end;
+
+procedure Tfrm_finish.FormKeyPress(Sender: TObject; var Key: Char);
+begin
+if key=#13 then sbt_submit.Click;
 end;
 
 procedure Tfrm_finish.sbt_submitClick(Sender: TObject);

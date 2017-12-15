@@ -3,7 +3,7 @@
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.IniFiles,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.StrUtils, System.Variants, System.Classes, System.IniFiles,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Buttons,
   Vcl.StdCtrls, Vcl.Grids, Vcl.DBGrids, Data.DB, O2DirSpy, Redis.Client, Redis.Commons, Redis.Values,
   Redis.NetLib.Factory, Redis.NetLib.INDY;
@@ -95,10 +95,9 @@ type
 
 var
   frm_main: Tfrm_main;
-  uvStaff_tip_count : Integer = 0;
-  uvWorkorder_tip_count : Integer = 0;
+  uvTip_count : Integer = 0;
   uvWeld_count : Integer = 0;
-  uvInput : String;
+  uvInput : String = '';
   uvStart : DWORD;
 
 implementation
@@ -529,44 +528,27 @@ end;
 
 procedure Operation_check;
 begin
-  if gvStaff_code='' then
+  if (gvStaff_code='') or (gvWorkorder_id<=0) then
     begin
-      Inc(uvStaff_tip_count);
-      if uvStaff_tip_count<4 then
+      Inc(uvTip_count);
+      if uvTip_count<4 then
         begin
-          Application.MessageBox(PChar('当前没有操作员，请先扫操作工条码，再操作机台！'),'错误',MB_ICONERROR);
-        end
-      else
-        begin
-          uvStaff_tip_count := 0;
-        end;
-    end
-  else
-    begin
-      uvStaff_tip_count := 0;
-    end;
-  if gvWorkorder_id<=0 then
-    begin
-      if uvWorkorder_tip_count<4 then
-        begin
-          Inc(uvWorkorder_tip_count);
+          if gvStaff_code='' then
+            begin
+              Application.MessageBox(PChar('当前没有操作员，请先扫操作工条码，再操作机台！'),'错误',MB_ICONERROR);
+              Exit;
+            end;
           if gvline_type='flowing' then    //主线上
             begin
               Application.MessageBox(PChar('当前没有工单，请先刷新工单，再操作机台！'),'错误',MB_ICONERROR);
+              Exit;
             end
           else if gvline_type='station' then    //工作站
             begin
               Application.MessageBox(PChar('当前没有工单，请先扫工单条码，再操作机台！'),'错误',MB_ICONERROR);
+              Exit;
             end;
-        end
-      else
-        begin
-          uvWorkorder_tip_count := 0;
         end;
-    end
-  else
-    begin
-      uvWorkorder_tip_count := 0;
     end;
 end;
 
@@ -623,8 +605,6 @@ end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
 begin
-  uvInput := '';
-  Self.KeyPreview := True;
   ini_set := TMemIniFile.Create(ChangeFileExt(ParamStr(0), '.ini'), TEncoding.UTF8);
   //获取ini中的server配置信息
   gvUse_Proxy := ini_set.ReadBool('server', 'use_proxy', gvUse_Proxy);
@@ -720,42 +700,9 @@ begin
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
             begin
               gvWorkorder_barcode:= uvInput;
-              vO := SO(scanWorkticket(gvApp_code, gvWorkorder_barcode));
-              if vO.B['result.success'] then  //成功扫描到工单
-                begin
-                  if lbl_doing_qty.Caption='0' then
-                    begin
-                      gvWorkorder_id := vO.I['result.workorder_id'];
-                      gvWorkorder_name := vO.S['result.workorder_name'];
-                      lbl_wo.Caption := gvWorkorder_name;
-                      gvWorkticket_id := vO.I['result.workticket_id'];
-                      gvWorkticket_name := vO.S['result.workticket_name'];
-                      gvWorkticket_state := vO.S['result.state'];
-                      lbl_state.Caption := gvWorkticket_state;
-                      gvProduct_code := vO.S['result.product_code'];
-                      lbl_product_code.Caption := gvProduct_code;
-                      gvInput_qty := vO.C['result.input_qty'];
-                      lbl_todo_qty.Caption := FloatToStr(gvInput_qty);
-                      gvOutput_qty := vO.C['result.output_qty'];
-                      lbl_good_qty.Caption := FloatToStr(gvOutput_qty);
-                      gvBadmode_qty := vO.C['result.badmode_qty'];
-                      lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
-                      lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
-                      gvLastworkcenter := vO.B['result.lastworkcenter'];
-                      log(DateTimeToStr(now())+', [INFO] 工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的扫描成功成功！');
-                      RefreshMaterials;   //扫描到工单后刷新材料信息
-                      RefreshStaff;
-                    end
-                  else
-                    begin
-                      log(DateTimeToStr(now())+', [ERROR] 工单号【'+lbl_wo.Caption+'】的有未提交的记录，请先提交');
-                      Application.MessageBox(PChar('工单号【'+lbl_wo.Caption+'】的有未提交的记录，请先提交'),'错误',MB_ICONERROR);
-                    end;
-                end
-              else  //扫描工单失败
-                begin
-                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+copy(uvInput,3,Length(uvInput)-2)+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
-                end;
+              RefreshWorkorder;
+              RefreshMaterials;   //扫描到工单后刷新材料信息
+              RefreshStaff;
             end;
           if (copy(uvInput,1,2)='AC') OR (copy(uvInput,1,2)='AT') then  //扫描到的是物料
             begin
@@ -786,37 +733,20 @@ end;
 
 procedure Tfrm_main.FormShow(Sender: TObject);
 begin
+  WorkorderInfoCDS;
+  MaterialsInfoCDS;
+  BadmodeCDS;
   RefreshEquipment;
   RefreshWorkorder;
   RefreshMaterials;
+  RefreshStaff;
   if gvDoing_qty>0 then
     begin
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
-    end
-  else
-    begin
-      //
     end;
-  if gvline_type='flowing' then
-    begin
-      spb_start.Hide;
-      spb_refresh.Show;
-    end
-  else if gvline_type='station' then
-    begin
-      spb_start.Show;
-      spb_refresh.Hide;
-    end;
+
   if gvApp_testing then tbs_workorder.TabVisible:=False else tbs_workorder.TabVisible:=True;
-  if queryStaffExist(gvApp_code) then  //设备上有操作工
-    begin
-      lbl_operator.Caption := gvStaff_code;
-      log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
-    end
-  else  //设备上没有操作工
-    begin
-      lbl_operator.Caption := '';
-    end;
+
   if gvCol_count>0 then
     CreateDataSet(gvHeader_lines, gvPrimary_key, gvDeli)
   else
@@ -853,7 +783,7 @@ var
   vFile : TFileStream;
   vO, vTest: ISuperObject;
   lvDataJson, lvMdcJson : String;
-  i : integer;
+  i, vP : integer;
 begin
   vList := TStringList.Create;
   vData := TStringList.Create;
@@ -1051,6 +981,60 @@ begin
                             FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
                           else if gvHeader_list.ValueFromIndex[i]='Integer' then
                             FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
+                        end;
+                      Post;
+                      lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                      lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                      Weld2yield;
+                      TThread.CreateAnonymousThread(
+                      procedure
+                      var
+                        Redis: IRedisClient;
+                      begin
+                        try
+                          Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                          Redis.Connect;
+                          Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                        finally
+                          Redis := nil;
+                        end;
+                      end).Start;
+                      gvSucceed:=gvSucceed+1;
+                      lbl_send_qty.Caption:=inttostr(gvSucceed);
+                      log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                      Operation_check;
+                      //EnableControls;
+                    except on e:Exception do
+                      begin
+                        Delete;
+                        gvFail:=gvFail+1;
+                        lbl_fail_qty.Caption:=inttostr(gvFail);
+                        log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                      end;
+                    end;
+                  end;
+              end;
+          end;
+          3://测试机2文件
+          begin
+            vList.Clear;
+            vFile := TFileStream.Create(vFileName, fmOpenRead);
+            vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+            for i := gvBegin_row-1 to gvEnd_row-1 do
+              begin
+                vData.Add(vList[i]);
+              end;
+            if vData.Count>0 then
+              begin
+                with data_module.cds_mdc do
+                  begin
+                    try
+                      //DisableControls;
+                      Append;
+                      for i := 0 to vData.Count-1 do
+                        begin
+                          vP := PosEx(#9,vData.Strings[i]);
+                          FieldByName(Copy(vData.Strings[i],1, vP-1)).AsString := Copy(vData.Strings[i],vP+1, Length(vData.Strings[i]));
                         end;
                       Post;
                       lvDataJson := CDS1LineToJson(data_module.cds_mdc);

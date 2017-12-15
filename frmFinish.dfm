@@ -14,6 +14,7 @@ object frm_finish: Tfrm_finish
   FormStyle = fsStayOnTop
   KeyPreview = True
   OldCreateOrder = False
+  OnKeyPress = FormKeyPress
   PixelsPerInch = 96
   TextHeight = 19
   object lbl_tag_doing_qty: TLabel

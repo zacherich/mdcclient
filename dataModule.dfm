@@ -1,6 +1,5 @@
 object data_module: Tdata_module
   OldCreateOrder = False
-  OnCreate = DataModuleCreate
   Height = 344
   Width = 395
   object cds_mdc: TClientDataSet

@@ -546,7 +546,7 @@ object frm_set: Tfrm_set
           MinValue = 1
           ParentFont = False
           TabOrder = 1
-          Value = 0
+          Value = 1
           OnChange = spn_header_lineChange
         end
         object cmb_datatype: TComboBox
@@ -616,9 +616,10 @@ object frm_set: Tfrm_set
           Caption = #25991#20214#31867#22411
           ItemIndex = 0
           Items.Strings = (
-            #25991#26412
+            #25991#26412#34892
             #25197#30697#28938
-            #26497#26609#28938)
+            #26497#26609#28938
+            #27979#35797#26426'2')
           TabOrder = 5
           OnClick = rdg_filetypeClick
         end
@@ -630,7 +631,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 6
-          Value = 1
+          Value = 0
           OnChange = spn_end_lineChange
         end
         object spn_begin_line: TSpinEdit
@@ -641,7 +642,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 7
-          Value = 1
+          Value = 0
           OnChange = spn_begin_lineChange
         end
         object edt_queue_name: TEdit
