@@ -1072,6 +1072,7 @@ begin
         end;
       end;
   finally
+    FreeAndNil(vFile);
     vList.Destroy;
     vData.Destroy;
   end;

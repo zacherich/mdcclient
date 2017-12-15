@@ -41,6 +41,10 @@ object frm_set: Tfrm_set
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = #22522#26412#35774#32622
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Image1: TImage
         Left = 16
         Top = 32
@@ -546,7 +550,7 @@ object frm_set: Tfrm_set
           MinValue = 1
           ParentFont = False
           TabOrder = 1
-          Value = 1
+          Value = 0
           OnChange = spn_header_lineChange
         end
         object cmb_datatype: TComboBox
@@ -631,7 +635,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 6
-          Value = 0
+          Value = 1
           OnChange = spn_end_lineChange
         end
         object spn_begin_line: TSpinEdit
@@ -642,7 +646,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 7
-          Value = 0
+          Value = 1
           OnChange = spn_begin_lineChange
         end
         object edt_queue_name: TEdit

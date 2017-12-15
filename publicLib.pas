@@ -401,7 +401,7 @@ begin
       vlist.LoadFromStream(vFile);  // 这与 LoadFromFile的区别很大, 特别是当文件很大的时候
       result := vlist.Strings[vlist.count-1];
     finally
-      vFile.Destroy;
+      FreeAndNil(vFile);
       vlist.Destroy;
     end;
 end;

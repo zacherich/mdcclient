@@ -485,18 +485,7 @@ begin
             spn_header_line.MinValue:=1;
             spn_header_line.MaxValue:=rdt_template.Lines.Count;
           end;
-          1://扭矩焊文件
-          begin
-            if vList.Count>0 then
-              begin
-                rdt_template.Lines.Text := vList.Text;
-                spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
-                spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=rdt_template.Lines.Count;
-              end;
-          end;
-          2://极柱焊文件
+          1..3://扭矩焊、极柱焊、测试机2文件
           begin
             if vList.Count>0 then
               begin
@@ -509,7 +498,7 @@ begin
           end;
         end;
       finally
-        vFile.Destroy;
+        FreeAndNil(vFile);
         vList.Destroy;
       end;
     end;
@@ -530,7 +519,7 @@ begin
   with OpenDialog1 do
     begin
       if DirectoryExists(lbl_data_path.Caption) then InitialDir:=lbl_data_path.Caption;
-      Filter:= '文本文件（*.csv;*.tsv;*.twd）|*.csv;*.tsv;*.twd';
+      Filter:= '文本文件（*.csv;*.tsv;*.twd;*.dat）|*.csv;*.tsv;*.twd;*.dat';
       FilterIndex:=1;
       Execute;
     end;
@@ -557,18 +546,7 @@ begin
             spn_header_line.MinValue:=1;
             spn_header_line.MaxValue:=rdt_template.Lines.Count;
           end;
-          1://扭矩焊文件
-          begin
-            if vList.Count>0 then
-              begin
-                rdt_template.Lines.Text := vList.Text;
-                spn_begin_line.MinValue:=1;
-                spn_begin_line.MaxValue:=rdt_template.Lines.Count;
-                spn_end_line.MinValue:=1;
-                spn_end_line.MaxValue:=rdt_template.Lines.Count;
-              end;
-          end;
-          2://极柱焊文件
+          1..3://扭矩焊、极柱焊、测试机2文件
           begin
             if vList.Count>0 then
               begin
@@ -581,6 +559,7 @@ begin
           end;
         end;
       finally
+        FreeAndNil(vFile);
         vList.Destroy;
       end;
     end;
@@ -598,16 +577,7 @@ begin
       lbl_tag_end_line.Visible := False;
       spn_end_line.Visible := False;
     end;
-    1://扭矩焊文件
-    begin
-      lbl_tag_header_line.Visible := False;
-      spn_header_line.Visible := False;
-      lbl_tag_begin_line.Visible := True;
-      spn_begin_line.Visible := True;
-      lbl_tag_end_line.Visible := True;
-      spn_end_line.Visible := True;
-    end;
-    2://极柱焊文件
+    1..3://扭矩焊、极柱焊、测试机2文件
     begin
       lbl_tag_header_line.Visible := False;
       spn_header_line.Visible := False;
@@ -671,7 +641,7 @@ begin
               end;
           end;
       finally
-        vList.Free;
+        vlist.Destroy;
       end;
     end;
     1://扭矩焊文件
@@ -707,7 +677,7 @@ begin
               end;
           end;
       finally
-        vList.Free;
+        vlist.Destroy;
       end;
     end;
     2://极柱焊文件
@@ -739,7 +709,7 @@ begin
               end;
           end;
       finally
-        vList.Free;
+        vlist.Destroy;
       end;
     end;
   end;
