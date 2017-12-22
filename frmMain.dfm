@@ -665,12 +665,16 @@ object frm_main: Tfrm_main
     Top = 217
     Width = 523
     Height = 431
-    ActivePage = tbs_workorder
+    ActivePage = tbs_collection
     Align = alClient
     TabOrder = 2
     object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Splitter1: TSplitter
         Left = 0
         Top = 201
@@ -693,7 +697,7 @@ object frm_main: Tfrm_main
         object lbl_tag_workorder: TLabel
           Left = 1
           Top = 1
-          Width = 513
+          Width = 60
           Height = 18
           Align = alTop
           Caption = #24037#21333#20449#24687
@@ -706,7 +710,6 @@ object frm_main: Tfrm_main
           ParentColor = False
           ParentFont = False
           Transparent = False
-          ExplicitWidth = 60
         end
         object dbg_workorder: TDBGrid
           Left = 1
@@ -736,14 +739,13 @@ object frm_main: Tfrm_main
         object lbl_tag_materiel: TLabel
           Left = 1
           Top = 1
-          Width = 513
+          Width = 75
           Height = 18
           Align = alTop
           Caption = #21407#26448#26009#20449#24687
           Color = clMoneyGreen
           ParentColor = False
           Transparent = False
-          ExplicitWidth = 75
         end
         object dbg_materiel: TDBGrid
           Left = 1
@@ -764,10 +766,6 @@ object frm_main: Tfrm_main
     end
     object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
@@ -857,10 +855,6 @@ object frm_main: Tfrm_main
     object tbs_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object lbx_log: TListBox
         Left = 0
         Top = 0
@@ -887,6 +881,7 @@ object frm_main: Tfrm_main
       end>
   end
   object Timer1: TTimer
+    Enabled = False
     OnTimer = Timer1Timer
     Left = 468
     Top = 610

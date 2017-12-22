@@ -194,7 +194,7 @@ begin
         Open;
       end;
   finally
-    gvHeader_list.Destroy;
+
   end;
 end;
 

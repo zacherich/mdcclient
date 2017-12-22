@@ -92,11 +92,13 @@ type
     { Public declarations }
   end;
   procedure RefreshEquipment;
+  procedure Collection_Data(const fvFileName : String);
 
 var
   frm_main: Tfrm_main;
   uvTip_count : Integer = 0;
   uvWeld_count : Integer = 0;
+  uvList, uvData, uvDirSpy : TStringList;
   uvInput : String = '';
   uvStart : DWORD;
 
@@ -552,6 +554,291 @@ begin
     end;
 end;
 
+procedure Collection_Data(const fvFileName : String);
+var
+  vFile : TFileStream;
+  vO, vTest: ISuperObject;
+  lvDataJson, lvMdcJson : String;
+  i, vP : integer;
+begin
+  try
+    case gvFile_type of
+      0://普通文本文件
+        begin
+          SplitStr(GetLastLine(fvFileName), gvDeli, gvCol_count, uvData);
+          if uvData.Count>0 then
+            begin
+              with data_module.cds_mdc do
+                begin
+                  try
+                    //DisableControls;
+                    Append;
+                    if uvData.Count<=gvHeader_list.Count then
+                      begin
+                        for i := 0 to uvData.Count-1 do
+                          begin
+                            if gvHeader_list.ValueFromIndex[i]='String' then
+                              FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                            else if gvHeader_list.ValueFromIndex[i]='Float' then
+                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                            else if gvHeader_list.ValueFromIndex[i]='Integer' then
+                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                          end;
+                      end
+                    else
+                      begin
+                        for i := 0 to gvHeader_list.Count-1 do
+                          begin
+                            if gvHeader_list.ValueFromIndex[i]='String' then
+                              FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                            else if gvHeader_list.ValueFromIndex[i]='Float' then
+                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                            else if gvHeader_list.ValueFromIndex[i]='Integer' then
+                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                          end;
+                      end;
+                    Post;
+                    lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    TThread.CreateAnonymousThread(
+                    procedure
+                    var
+                      Redis: IRedisClient;
+                    begin
+                      try
+                        Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                        Redis.Connect;
+                        Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                      finally
+                        Redis := nil;
+                      end;
+                    end).Start;
+                    gvSucceed:=gvSucceed+1;
+                    frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
+                    //判断是否是测试机,如果是,则提交测试机数据
+                    if gvApp_testing then
+                      begin
+                        vTest := SO(lvDataJson);
+                        if vTest.S[gvTest_result_field]=gvTest_pass_value then
+                          begin
+                            if testingRecord(vTest.S[gvTest_SN_field], TRUE, vTest.S[gvTest_result_field]) then
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                              end
+                            else
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                              end;
+                          end
+                        else
+                          begin
+                            if testingRecord(vTest.S[gvTest_SN_field], FALSE, vTest.S[gvTest_result_field]) then
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                              end
+                            else
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                              end;
+                          end;
+                      end
+                    else
+                      begin
+                        Weld2yield;
+                      end;
+                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    Operation_check;
+                    //EnableControls;
+                  except on e:Exception do
+                    begin
+                      Delete;
+                      gvFail:=gvFail+1;
+                      frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
+                      log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                    end;
+                  end;
+                end;
+            end;
+        end;
+      1://扭矩焊文件
+        begin
+          uvList.Clear;
+          uvData.Clear;
+          vFile := TFileStream.Create(fvFileName, fmOpenRead);
+          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          for i := gvBegin_row-1 to gvEnd_row-1 do
+            begin
+              uvData.Add(uvList[i]);
+            end;
+          if uvData.Text<>'' then vO := XMLParseString(uvData.Text,true);
+          if vO.asObject.Count>0 then
+            begin
+              with data_module.cds_mdc do
+                begin
+                  try
+                    //DisableControls;
+                    Append;
+                    for i := 0 to gvHeader_list.Count-1 do
+                      begin
+                        if gvHeader_list.ValueFromIndex[i]='String' then
+                          FieldByName(gvHeader_list.Names[i]).AsString := vO.S[gvHeader_list.Names[i]]
+                        else if gvHeader_list.ValueFromIndex[i]='Float' then
+                          FieldByName(gvHeader_list.Names[i]).AsFloat := vO.D[gvHeader_list.Names[i]]
+                        else if gvHeader_list.ValueFromIndex[i]='Integer' then
+                          FieldByName(gvHeader_list.Names[i]).AsInteger := vO.I[gvHeader_list.Names[i]];
+                      end;
+                    Post;
+                    lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    Weld2yield;
+                    TThread.CreateAnonymousThread(
+                    procedure
+                    var
+                      Redis: IRedisClient;
+                    begin
+                      try
+                        Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                        Redis.Connect;
+                        Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                      finally
+                        Redis := nil;
+                      end;
+                    end).Start;
+                    gvSucceed:=gvSucceed+1;
+                    frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
+                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    Operation_check;
+                    //EnableControls;
+                  except on e:Exception do
+                    begin
+                      Delete;
+                      gvFail:=gvFail+1;
+                      frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
+                      log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                    end;
+                  end;
+                end;
+            end;
+        end;
+      2://极柱焊文件
+        begin
+          uvList.Clear;
+          uvData.Clear;
+          vFile := TFileStream.Create(fvFileName, fmOpenRead);
+          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          for i := gvBegin_row-1 to gvEnd_row-1 do
+            begin
+              uvData.Add(uvList[i]);
+            end;
+          if uvData.Count>0 then
+            begin
+              with data_module.cds_mdc do
+                begin
+                  try
+                    //DisableControls;
+                    Append;
+                    for i := 0 to gvHeader_list.Count-1 do
+                      begin
+                        if gvHeader_list.ValueFromIndex[i]='String' then
+                          FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                        else if gvHeader_list.ValueFromIndex[i]='Float' then
+                          FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                        else if gvHeader_list.ValueFromIndex[i]='Integer' then
+                          FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                      end;
+                    Post;
+                    lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    Weld2yield;
+                    TThread.CreateAnonymousThread(
+                    procedure
+                    var
+                      Redis: IRedisClient;
+                    begin
+                      try
+                        Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                        Redis.Connect;
+                        Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                      finally
+                        Redis := nil;
+                      end;
+                    end).Start;
+                    gvSucceed:=gvSucceed+1;
+                    frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
+                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    Operation_check;
+                    //EnableControls;
+                  except on e:Exception do
+                    begin
+                      Delete;
+                      gvFail:=gvFail+1;
+                      frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
+                      log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                    end;
+                  end;
+                end;
+            end;
+        end;
+      3://测试机2文件
+        begin
+          uvList.Clear;
+          vFile := TFileStream.Create(fvFileName, fmOpenRead);
+          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          for i := gvBegin_row-1 to gvEnd_row-1 do
+            begin
+              uvData.Add(uvList[i]);
+            end;
+          if uvData.Count>0 then
+            begin
+              with data_module.cds_mdc do
+                begin
+                  try
+                    //DisableControls;
+                    Append;
+                    for i := 0 to uvData.Count-1 do
+                      begin
+                        vP := PosEx(#9,uvData.Strings[i]);
+                        FieldByName(Copy(uvData.Strings[i],1, vP-1)).AsString := Copy(uvData.Strings[i],vP+1, Length(uvData.Strings[i]));
+                      end;
+                    Post;
+                    lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    Weld2yield;
+                    TThread.CreateAnonymousThread(
+                    procedure
+                    var
+                      Redis: IRedisClient;
+                    begin
+                      try
+                        Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                        Redis.Connect;
+                        Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                      finally
+                        Redis := nil;
+                      end;
+                    end).Start;
+                    gvSucceed:=gvSucceed+1;
+                    frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
+                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    Operation_check;
+                    //EnableControls;
+                  except on e:Exception do
+                    begin
+                      Delete;
+                      gvFail:=gvFail+1;
+                      frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
+                      log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                    end;
+                  end;
+                end;
+            end;
+        end;
+    end;
+  finally
+    vFile.Free;
+  end;
+end;
+
 procedure Tfrm_main.dbg_workorderDblClick(Sender: TObject);
 begin
   if gvDoing_qty = 0 then
@@ -600,7 +887,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  //CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -654,6 +941,10 @@ begin
   //
   gvWorkorder_barcode := ini_set.ReadString('job', 'workorder', gvWorkorder_barcode);
   gvDoing_qty := ini_set.ReadInteger('job', 'doing_qty', gvDoing_qty);
+
+  uvDirSpy := TStringList.Create;
+  uvList := TStringList.Create;
+  uvData := TStringList.Create;
 
   //实例化文件监控控件
   OxygenDirectorySpy1 := TOxygenDirectorySpy.Create(Self);
@@ -778,304 +1069,22 @@ end;
 
 procedure Tfrm_main.OxygenDirectorySpy1ChangeDirectory(Sender: TObject; ChangeRecord: TDirectoryChangeRecord);
 var
-  vList, vData : TStringList;
-  vPath, vFileName : String;
-  vFile : TFileStream;
-  vO, vTest: ISuperObject;
-  lvDataJson, lvMdcJson : String;
-  i, vP : integer;
+  vFileName: String;
+
 begin
-  vList := TStringList.Create;
-  vData := TStringList.Create;
+  uvDirSpy.Clear;
+  uvList.Clear;
+  uvData.Clear;
   log(DateTimeToStr(now())+', [INFO] '+ChangeRecord2String(ChangeRecord));
-  try
-    vList.Delimiter := '|';
-    vList.StrictDelimiter := True;
-    vList.DelimitedText := ChangeRecord2String(ChangeRecord);
-    vFileName:=vList.Strings[1];
-    vPath:=ChangeFileExt(ExtractFileName(vFileName),'');
-    if (vList.Strings[2]=gvMonitor_type) then
-      begin
-        case gvFile_type of
-          0://普通文本文件
-          begin
-            vList.Clear;
-            vData.Clear;
-            SplitStr(GetLastLine(vFileName), gvDeli, gvCol_count, vData);
-            if vData.Count>0 then
-              begin
-                with data_module.cds_mdc do
-                  begin
-                    try
-                      //DisableControls;
-                      Append;
-                      if vData.Count<=gvHeader_list.Count then
-                        begin
-                          for i := 0 to vData.Count-1 do
-                            begin
-                              if gvHeader_list.ValueFromIndex[i]='String' then
-                                FieldByName(gvHeader_list.Names[i]).AsString := vData.Strings[i]
-                              else if gvHeader_list.ValueFromIndex[i]='Float' then
-                                FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
-                              else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                                FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
-                            end;
-                        end
-                      else
-                        begin
-                          for i := 0 to gvHeader_list.Count-1 do
-                            begin
-                              if gvHeader_list.ValueFromIndex[i]='String' then
-                                FieldByName(gvHeader_list.Names[i]).AsString := vData.Strings[i]
-                              else if gvHeader_list.ValueFromIndex[i]='Float' then
-                                FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
-                              else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                                FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
-                            end;
-                        end;
-                      Post;
-                      lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                      lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                      TThread.CreateAnonymousThread(
-                      procedure
-                      var
-                        Redis: IRedisClient;
-                      begin
-                        try
-                          Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
-                          Redis.Connect;
-                          Redis.LPUSH(gvQueue_name, [lvMdcJson]);
-                        finally
-                          Redis := nil;
-                        end;
-                      end).Start;
-                      gvSucceed:=gvSucceed+1;
-                      lbl_send_qty.Caption:=inttostr(gvSucceed);
-                      //判断是否是测试机,如果是,则提交测试机数据
-                      if gvApp_testing then
-                        begin
-                          vTest := SO(lvDataJson);
-                          if vTest.S[gvTest_result_field]=gvTest_pass_value then
-                            begin
-                              if testingRecord(vTest.S[gvTest_SN_field], TRUE, vTest.S[gvTest_result_field]) then
-                                begin
-                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
-                                end
-                              else
-                                begin
-                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
-                                end;
-                            end
-                          else
-                            begin
-                              if testingRecord(vTest.S[gvTest_SN_field], FALSE, vTest.S[gvTest_result_field]) then
-                                begin
-                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
-                                end
-                              else
-                                begin
-                                  log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
-                                end;
-                            end;
-                        end
-                      else
-                        begin
-                          Weld2yield;
-                        end;
-                      log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
-                      Operation_check;
-                      //EnableControls;
-                    except on e:Exception do
-                      begin
-                        Delete;
-                        gvFail:=gvFail+1;
-                        lbl_fail_qty.Caption:=inttostr(gvFail);
-                        log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
-                      end;
-                    end;
-                  end;
-              end;
-          end;
-          1://扭矩焊文件
-          begin
-            vList.Clear;
-            vData.Clear;
-            vFile := TFileStream.Create(vFileName, fmOpenRead);
-            vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
-            for i := gvBegin_row-1 to gvEnd_row-1 do
-              begin
-                vData.Add(vList[i]);
-              end;
-            if vData.Text<>'' then vO := XMLParseString(vData.Text,true);
-            if vO.asObject.Count>0 then
-              begin
-                with data_module.cds_mdc do
-                  begin
-                    try
-                      //DisableControls;
-                      Append;
-                      for i := 0 to gvHeader_list.Count-1 do
-                        begin
-                          if gvHeader_list.ValueFromIndex[i]='String' then
-                            FieldByName(gvHeader_list.Names[i]).AsString := vO.S[gvHeader_list.Names[i]]
-                          else if gvHeader_list.ValueFromIndex[i]='Float' then
-                            FieldByName(gvHeader_list.Names[i]).AsFloat := vO.D[gvHeader_list.Names[i]]
-                          else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                            FieldByName(gvHeader_list.Names[i]).AsInteger := vO.I[gvHeader_list.Names[i]];
-                        end;
-                      Post;
-                      lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                      lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                      Weld2yield;
-                      TThread.CreateAnonymousThread(
-                      procedure
-                      var
-                        Redis: IRedisClient;
-                      begin
-                        try
-                          Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
-                          Redis.Connect;
-                          Redis.LPUSH(gvQueue_name, [lvMdcJson]);
-                        finally
-                          Redis := nil;
-                        end;
-                      end).Start;
-                      gvSucceed:=gvSucceed+1;
-                      lbl_send_qty.Caption:=inttostr(gvSucceed);
-                      log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
-                      Operation_check;
-                      //EnableControls;
-                    except on e:Exception do
-                      begin
-                        Delete;
-                        gvFail:=gvFail+1;
-                        lbl_fail_qty.Caption:=inttostr(gvFail);
-                        log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
-                      end;
-                    end;
-                  end;
-              end;
-          end;
-          2://极柱焊文件
-          begin
-            vList.Clear;
-            vData.Clear;
-            vFile := TFileStream.Create(vFileName, fmOpenRead);
-            vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
-            for i := gvBegin_row-1 to gvEnd_row-1 do
-              begin
-                vData.Add(vList[i]);
-              end;
-            if vData.Count>0 then
-              begin
-                with data_module.cds_mdc do
-                  begin
-                    try
-                      //DisableControls;
-                      Append;
-                      for i := 0 to gvHeader_list.Count-1 do
-                        begin
-                          if gvHeader_list.ValueFromIndex[i]='String' then
-                            FieldByName(gvHeader_list.Names[i]).AsString := vData.Strings[i]
-                          else if gvHeader_list.ValueFromIndex[i]='Float' then
-                            FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
-                          else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                            FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
-                        end;
-                      Post;
-                      lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                      lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                      Weld2yield;
-                      TThread.CreateAnonymousThread(
-                      procedure
-                      var
-                        Redis: IRedisClient;
-                      begin
-                        try
-                          Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
-                          Redis.Connect;
-                          Redis.LPUSH(gvQueue_name, [lvMdcJson]);
-                        finally
-                          Redis := nil;
-                        end;
-                      end).Start;
-                      gvSucceed:=gvSucceed+1;
-                      lbl_send_qty.Caption:=inttostr(gvSucceed);
-                      log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
-                      Operation_check;
-                      //EnableControls;
-                    except on e:Exception do
-                      begin
-                        Delete;
-                        gvFail:=gvFail+1;
-                        lbl_fail_qty.Caption:=inttostr(gvFail);
-                        log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
-                      end;
-                    end;
-                  end;
-              end;
-          end;
-          3://测试机2文件
-          begin
-            vList.Clear;
-            vFile := TFileStream.Create(vFileName, fmOpenRead);
-            vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
-            for i := gvBegin_row-1 to gvEnd_row-1 do
-              begin
-                vData.Add(vList[i]);
-              end;
-            if vData.Count>0 then
-              begin
-                with data_module.cds_mdc do
-                  begin
-                    try
-                      //DisableControls;
-                      Append;
-                      for i := 0 to vData.Count-1 do
-                        begin
-                          vP := PosEx(#9,vData.Strings[i]);
-                          FieldByName(Copy(vData.Strings[i],1, vP-1)).AsString := Copy(vData.Strings[i],vP+1, Length(vData.Strings[i]));
-                        end;
-                      Post;
-                      lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                      lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                      Weld2yield;
-                      TThread.CreateAnonymousThread(
-                      procedure
-                      var
-                        Redis: IRedisClient;
-                      begin
-                        try
-                          Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
-                          Redis.Connect;
-                          Redis.LPUSH(gvQueue_name, [lvMdcJson]);
-                        finally
-                          Redis := nil;
-                        end;
-                      end).Start;
-                      gvSucceed:=gvSucceed+1;
-                      lbl_send_qty.Caption:=inttostr(gvSucceed);
-                      log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
-                      Operation_check;
-                      //EnableControls;
-                    except on e:Exception do
-                      begin
-                        Delete;
-                        gvFail:=gvFail+1;
-                        lbl_fail_qty.Caption:=inttostr(gvFail);
-                        log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
-                      end;
-                    end;
-                  end;
-              end;
-          end;
-        end;
-      end;
-  finally
-    FreeAndNil(vFile);
-    vList.Destroy;
-    vData.Destroy;
-  end;
+  uvDirSpy.Delimiter := '|';
+  uvDirSpy.StrictDelimiter := True;
+  uvDirSpy.DelimitedText := ChangeRecord2String(ChangeRecord);
+  vFileName:=uvDirSpy.Strings[1];
+  //vPath:=ChangeFileExt(ExtractFileName(vFileName),'');
+  if (uvDirSpy.Strings[2]=gvMonitor_type) then
+    begin
+      Collection_Data(vFileName);
+    end;
 end;
 
 procedure Tfrm_main.spb_refreshClick(Sender: TObject);
