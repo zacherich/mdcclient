@@ -30,7 +30,7 @@ object frm_set: Tfrm_set
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -41,10 +41,6 @@ object frm_set: Tfrm_set
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = #22522#26412#35774#32622
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Image1: TImage
         Left = 16
         Top = 32
@@ -210,7 +206,7 @@ object frm_set: Tfrm_set
       end
       object lbl_app_secret: TLabel
         Left = 508
-        Top = 192
+        Top = 116
         Width = 92
         Height = 18
         Caption = 'lbl_app_secret'
@@ -291,27 +287,6 @@ object frm_set: Tfrm_set
         ParentFont = False
         Visible = False
       end
-      object lbl_tag_serialnumber: TLabel
-        Left = 293
-        Top = 368
-        Width = 96
-        Height = 19
-        Caption = #24207#21015#21495#23383#27573#65306
-      end
-      object lbl_tag_operation_pass: TLabel
-        Left = 293
-        Top = 407
-        Width = 112
-        Height = 19
-        Caption = #27979#35797#32467#26524#23383#27573#65306
-      end
-      object lbl_tag_operate_result: TLabel
-        Left = 293
-        Top = 448
-        Width = 96
-        Height = 19
-        Caption = #27979#35797#25104#21151#20540#65306
-      end
       object edt_app_secret: TEdit
         Left = 374
         Top = 84
@@ -335,35 +310,78 @@ object frm_set: Tfrm_set
         TabOrder = 1
         OnChange = edt_app_codeChange
       end
-      object ckb_testing: TCheckBox
-        Left = 97
-        Top = 409
-        Width = 84
-        Height = 17
-        Caption = #26159#27979#35797#26426
+      object grb_testing: TGroupBox
+        Left = 16
+        Top = 341
+        Width = 698
+        Height = 140
+        Caption = #27979#35797#26426#35774#32622
         TabOrder = 2
-        OnClick = ckb_testingClick
-      end
-      object edt_test_sn_field: TEdit
-        Left = 413
-        Top = 365
-        Width = 196
-        Height = 27
-        TabOrder = 3
-      end
-      object edt_test_result_field: TEdit
-        Left = 411
-        Top = 404
-        Width = 198
-        Height = 27
-        TabOrder = 4
-      end
-      object edt_test_pass_value: TEdit
-        Left = 411
-        Top = 445
-        Width = 198
-        Height = 27
-        TabOrder = 5
+        object lbl_tag_serialnumber: TLabel
+          Left = 125
+          Top = 97
+          Width = 96
+          Height = 19
+          Caption = #24207#21015#21495#23383#27573#65306
+        end
+        object lbl_tag_test_result_field: TLabel
+          Left = 412
+          Top = 41
+          Width = 112
+          Height = 19
+          Caption = #27979#35797#32467#26524#23383#27573#65306
+        end
+        object lbl_tag_test_pass_value: TLabel
+          Left = 412
+          Top = 97
+          Width = 96
+          Height = 19
+          Caption = #27979#35797#25104#21151#20540#65306
+        end
+        object lbl_tag_operator_field: TLabel
+          Left = 125
+          Top = 40
+          Width = 96
+          Height = 19
+          Caption = #25805#20316#21592#23383#27573#65306
+        end
+        object ckb_testing: TCheckBox
+          Left = 20
+          Top = 67
+          Width = 84
+          Height = 17
+          Caption = #26159#27979#35797#26426
+          TabOrder = 0
+          OnClick = ckb_testingClick
+        end
+        object edt_test_sn_field: TEdit
+          Left = 219
+          Top = 92
+          Width = 179
+          Height = 27
+          TabOrder = 1
+        end
+        object edt_test_result_field: TEdit
+          Left = 520
+          Top = 38
+          Width = 153
+          Height = 27
+          TabOrder = 2
+        end
+        object edt_test_pass_value: TEdit
+          Left = 520
+          Top = 92
+          Width = 153
+          Height = 27
+          TabOrder = 3
+        end
+        object edt_operator_field: TEdit
+          Left = 219
+          Top = 37
+          Width = 179
+          Height = 27
+          TabOrder = 4
+        end
       end
     end
     object TabSheet2: TTabSheet

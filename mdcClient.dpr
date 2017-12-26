@@ -8,7 +8,8 @@ uses
   dataModule in 'dataModule.pas' {data_module: TDataModule},
   frmLogin in 'frmLogin.pas' {frm_login},
   frmFinish in 'frmFinish.pas' {frm_finish},
-  frmContainer in 'frmContainer.pas' {frm_container};
+  frmContainer in 'frmContainer.pas' {frm_container},
+  sliderPanel in 'sliderPanel.pas';
 
 {$R *.res}
 

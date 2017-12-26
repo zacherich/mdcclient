@@ -1,7 +1,8 @@
 object frm_main: Tfrm_main
   Left = 0
   Top = 0
-  BorderStyle = bsDialog
+  BorderIcons = [biSystemMenu, biMinimize]
+  BorderStyle = bsSingle
   Caption = #23433#36153#35834#23425#24503'MES'
   ClientHeight = 671
   ClientWidth = 523
@@ -304,21 +305,8 @@ object frm_main: Tfrm_main
     Font.Style = []
     ParentFont = False
     TabOrder = 1
-    object lbl_tag_wo: TLabel
-      Left = 16
-      Top = 37
-      Width = 64
-      Height = 19
-      Caption = #24037#21333#21495#65306
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -16
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-    end
     object lbl_tag_product_code: TLabel
-      Left = 268
+      Left = 11
       Top = 37
       Width = 63
       Height = 19
@@ -331,7 +319,7 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_tag_todo_qty: TLabel
-      Left = 16
+      Left = 11
       Top = 62
       Width = 63
       Height = 19
@@ -383,7 +371,7 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_tag_doing_qty: TLabel
-      Left = 16
+      Left = 11
       Top = 87
       Width = 64
       Height = 19
@@ -396,33 +384,33 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_wo: TLabel
-      Left = 74
-      Top = 37
-      Width = 16
-      Height = 19
+      Left = 113
+      Top = 2
+      Width = 22
+      Height = 25
       Caption = #26080
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -16
+      Font.Height = -21
       Font.Name = 'Tahoma'
-      Font.Style = []
+      Font.Style = [fsBold]
       ParentFont = False
     end
     object lbl_product_code: TLabel
-      Left = 325
+      Left = 69
       Top = 37
-      Width = 16
+      Width = 17
       Height = 19
       Caption = #26080
       Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
+      Font.Color = clRed
       Font.Height = -16
       Font.Name = 'Tahoma'
-      Font.Style = []
+      Font.Style = [fsBold]
       ParentFont = False
     end
     object lbl_todo_qty: TLabel
-      Left = 74
+      Left = 69
       Top = 62
       Width = 9
       Height = 19
@@ -474,7 +462,7 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_doing_qty: TLabel
-      Left = 74
+      Left = 69
       Top = 87
       Width = 9
       Height = 19
@@ -487,16 +475,16 @@ object frm_main: Tfrm_main
       ParentFont = False
     end
     object lbl_tag_title: TLabel
-      Left = 190
+      Left = 11
       Top = 2
-      Width = 112
-      Height = 33
-      Caption = #24403#21069#24037#21333
+      Width = 96
+      Height = 25
+      Caption = #24403#21069#24037#21333':'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -27
+      Font.Height = -21
       Font.Name = 'Tahoma'
-      Font.Style = [fsBold, fsUnderline]
+      Font.Style = [fsBold]
       ParentFont = False
     end
     object spb_submit: TSpeedButton
@@ -662,9 +650,9 @@ object frm_main: Tfrm_main
   end
   object PageControl1: TPageControl
     Left = 0
-    Top = 217
+    Top = 254
     Width = 523
-    Height = 431
+    Height = 417
     ActivePage = tbs_collection
     Align = alClient
     TabOrder = 2
@@ -677,19 +665,18 @@ object frm_main: Tfrm_main
       ExplicitHeight = 0
       object Splitter1: TSplitter
         Left = 0
-        Top = 201
+        Top = 235
         Width = 515
         Height = 3
         Cursor = crVSplit
         Align = alTop
-        ExplicitTop = 145
-        ExplicitWidth = 256
+        ExplicitTop = 232
       end
       object pnl_workorder: TPanel
         Left = 0
         Top = 0
         Width = 515
-        Height = 201
+        Height = 235
         Align = alTop
         Ctl3D = False
         ParentCtl3D = False
@@ -715,7 +702,7 @@ object frm_main: Tfrm_main
           Left = 1
           Top = 19
           Width = 513
-          Height = 181
+          Height = 215
           Align = alClient
           DataSource = data_module.dsc_workorder
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -731,9 +718,9 @@ object frm_main: Tfrm_main
       end
       object pnl_materiel: TPanel
         Left = 0
-        Top = 204
+        Top = 238
         Width = 515
-        Height = 194
+        Height = 146
         Align = alClient
         TabOrder = 1
         object lbl_tag_materiel: TLabel
@@ -751,7 +738,7 @@ object frm_main: Tfrm_main
           Left = 1
           Top = 19
           Width = 513
-          Height = 174
+          Height = 126
           Align = alClient
           DataSource = data_module.dsc_materials
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -770,7 +757,7 @@ object frm_main: Tfrm_main
         Left = 0
         Top = 25
         Width = 515
-        Height = 373
+        Height = 359
         Align = alClient
         DataSource = data_module.dsc_mdc
         Font.Charset = DEFAULT_CHARSET
@@ -859,7 +846,7 @@ object frm_main: Tfrm_main
         Left = 0
         Top = 0
         Width = 515
-        Height = 398
+        Height = 384
         Style = lbVirtual
         Align = alClient
         ItemHeight = 18
@@ -867,23 +854,18 @@ object frm_main: Tfrm_main
       end
     end
   end
-  object stb_tipsbar: TStatusBar
+  object pnl_tipsbar: TPanel
     Left = 0
-    Top = 648
+    Top = 217
     Width = 523
-    Height = 23
-    Panels = <
-      item
-        Width = 350
-      end
-      item
-        Width = 50
-      end>
-  end
-  object Timer1: TTimer
-    Enabled = False
-    OnTimer = Timer1Timer
-    Left = 468
-    Top = 610
+    Height = 37
+    Align = alTop
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -15
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    TabOrder = 3
   end
 end

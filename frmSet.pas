@@ -63,14 +63,17 @@ type
     lbl_tag_port: TLabel;
     lbl_host: TLabel;
     lbl_port: TLabel;
+    rdt_template: TRichEdit;
+    grb_testing: TGroupBox;
     ckb_testing: TCheckBox;
     lbl_tag_serialnumber: TLabel;
-    lbl_tag_operation_pass: TLabel;
-    lbl_tag_operate_result: TLabel;
     edt_test_sn_field: TEdit;
+    lbl_tag_test_result_field: TLabel;
     edt_test_result_field: TEdit;
+    lbl_tag_test_pass_value: TLabel;
     edt_test_pass_value: TEdit;
-    rdt_template: TRichEdit;
+    lbl_tag_operator_field: TLabel;
+    edt_operator_field: TEdit;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
@@ -190,7 +193,7 @@ begin
           ini_set.WriteInteger('collection', 'col_count', gvCol_count);
           ini_set.UpdateFile;
           //根据新的模板字段重构数据集
-          CreateDataSet(gvHeader_lines, gvPrimary_key, gvDeli);
+          DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli);
           //修改文件监控路径
           with frm_Main.OxygenDirectorySpy1 do begin
             Enabled := False;
@@ -273,7 +276,7 @@ begin
           ini_set.WriteInteger('collection', 'col_count', gvCol_count);
           ini_set.UpdateFile;
           //根据新的模板字段重构数据集
-          CreateDataSet(gvHeader_lines, gvPrimary_key, gvDeli);
+          DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli);
           //修改文件监控路径
           with frm_Main.OxygenDirectorySpy1 do begin
             Enabled := False;
@@ -356,7 +359,7 @@ begin
           ini_set.WriteInteger('collection', 'col_count', gvCol_count);
           ini_set.UpdateFile;
           //根据新的模板字段重构数据集
-          CreateDataSet(gvHeader_lines, gvPrimary_key, gvDeli);
+          DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli);
           //修改文件监控路径
           with frm_Main.OxygenDirectorySpy1 do begin
             Enabled := False;
@@ -383,6 +386,8 @@ begin
 
     gvApp_testing := ckb_testing.Checked;
     ini_set.WriteBool('equipment', 'app_testing', gvApp_testing);
+    gvTest_operator_field := Trim(edt_operator_field.Text);
+    ini_set.WriteString('equipment', 'test_operator_field', gvTest_operator_field);
     gvTest_SN_field := Trim(edt_test_sn_field.Text);
     ini_set.WriteString('equipment', 'test_sn_field', gvTest_SN_field);
     gvTest_result_field := Trim(edt_test_result_field.Text);
@@ -407,9 +412,12 @@ end;
 
 procedure Tfrm_set.ckb_testingClick(Sender: TObject);
 begin
+  grb_testing.Visible := ckb_testing.Checked;
+  lbl_tag_operator_field.Visible := ckb_testing.Checked;
   lbl_tag_serialnumber.Visible := ckb_testing.Checked;
-  lbl_tag_operation_pass.Visible := ckb_testing.Checked;
-  lbl_tag_operate_result.Visible := ckb_testing.Checked;
+  lbl_tag_test_result_field.Visible := ckb_testing.Checked;
+  lbl_tag_test_pass_value.Visible := ckb_testing.Checked;
+  edt_operator_field.Visible := ckb_testing.Checked;
   edt_test_sn_field.Visible := ckb_testing.Checked;
   edt_test_result_field.Visible := ckb_testing.Checked;
   edt_test_pass_value.Visible := ckb_testing.Checked;
@@ -451,6 +459,7 @@ var vList : TStringList;
 begin
   //显示设备信息
   ckb_testing.Checked := gvApp_testing;
+  edt_operator_field.Text := gvTest_operator_field;
   edt_test_sn_field.Text := gvTest_SN_field;
   edt_test_result_field.Text := gvTest_result_field;
   edt_test_pass_value.Text := gvTest_pass_value;

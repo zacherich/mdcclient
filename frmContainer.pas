@@ -44,6 +44,7 @@ begin
       vFinish := GetTickCount();
       if (vFinish - uvStart) / Length(uvInput) < 100 then
         begin
+          uvInput := UpperCase(uvInput);
           if copy(uvInput,1,2)='AT' then  //扫描到的是容器
             begin
               vO := SO(scanContainer(uvInput));

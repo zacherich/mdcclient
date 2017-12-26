@@ -10,7 +10,7 @@ uses
   procedure WorkorderInfoCDS;
   procedure MaterialsInfoCDS;
   procedure BadmodeCDS;
-  Procedure CreateDataSet(const fHeadlines, fPrimary_key: string; const fDeli: Char);
+  Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
   function GetFileType(FileName:String):string;
   function GetLastLine(fName : String) : String;
   //取基础资料编码或名称的函数，形如导线整形[SP_000]
@@ -36,18 +36,18 @@ uses
   function JsonRPCobject(fvURL: String; CONST fvArgs: String): String;
   function JsonRPCsearch_read(fvURL: String; CONST fvDB: String; CONST fvUserid: Integer; CONST fvPassword: String;
                               CONST fvModel: String; CONST fvDomain: String; CONST fvFields: String  ): String;
-  function scanStaff(CONST fvApp_code, fvStaff_code: String): String;   //扫码考勤
-  function queryEquipment(CONST fvApp_code: String): Bool;    //查询设备信息
-  function queryStaffExist(CONST fvApp_code: String): Bool;    //查询员工是否在岗
+  function scanStaff(CONST fvBarcode: String): String;   //扫码考勤
+  function queryEquipment : Bool;    //查询设备信息
+  function queryStaffExist : Bool;    //查询员工是否在岗
   function queryLineType(CONST fvLine_code: String): Bool;   //查询生产线类型
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
-  function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;   //扫描工票工单
+  function scanWorkticket(CONST fvBarcode: String): String;   //扫描工票工单
   function scanContainer(CONST fvBarcode: String): String;   //扫描容器
-  function getLineWorkorder(CONST fvApp_code: String): String;  //查询主线工单
-  function feedMaterial(CONST fvApp_code, fvBarcode: String): String;   //设备上料
-  function getFeedMaterials(CONST fvApp_code: String): String;     //查询设备上料信息
+  function getLineWorkorder : String;  //查询主线工单
+  function feedMaterial(CONST fvBarcode: String): String;   //设备上料
+  function getFeedMaterials : String;     //查询设备上料信息
   function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;  //查询工单上工位的消耗信息
-  function queryBadmode(CONST fvWorkcenter_id: Integer): String;
+  function queryBadmode : String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
   function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
@@ -59,6 +59,7 @@ var
   gvApp_code : String;
   gvApp_name : String;
   gvApp_testing : Bool;
+  gvTest_operator_field : String;
   gvTest_SN_field : String;
   gvTest_result_field : String;
   gvTest_pass_value : String;
@@ -106,6 +107,8 @@ var
   gvUserName : String;
   gvPassword : String;
   //在制工单
+  gvMainorder_id : Integer;
+  gvMainorder_name : String;
   gvWorkorder_barcode : String;
   gvWorkorder_id : Integer;
   gvWorkorder_name : String;
@@ -161,7 +164,7 @@ begin
     Result := Format('%s%%%.2x', [Result, b]);
 end;
 
-Procedure CreateDataSet(const fHeadlines, fPrimary_key: string; const fDeli: Char);
+Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
 var i: Integer;
 begin
   gvHeader_list := TStringList.Create;
@@ -183,7 +186,7 @@ begin
               FieldDefs.Add(gvHeader_list.Names[i], ftFloat, 0, False)
             else if gvHeader_list.ValueFromIndex[i]='Integer' then
               FieldDefs.Add(gvHeader_list.Names[i], ftInteger, 0, False);
-            FieldDefs.Items[i].Size:=20;
+            //FieldDefs.Items[i].Size:=20;
           end;
         FieldDefs.Add('mdc_state', ftInteger, 0, False);
         //创建索引字段，多个字段用分号隔开; 默认升序排列
@@ -192,6 +195,11 @@ begin
         IndexDefs.Add('idx_mdc_state', 'mdc_state', []);
         CreateDataSet;
         Open;
+      end;
+    for i:=0 to frm_main.dbg_collection.Columns.Count-1 do
+      begin
+        frm_main.dbg_collection.Columns[i].Width := 100;
+        frm_main.dbg_collection.Columns[i].Title.Alignment := taCenter;
       end;
   finally
 
@@ -213,7 +221,7 @@ begin
       FieldDefs.Add('actual_qty', ftFloat, 0,False);  //实做数量
       FieldDefs.Add('badmode_qty', ftFloat, 0, False);   //不良数量
       FieldDefs.Add('weld_count', ftInteger, 0, False);  //焊接次数
-      FieldDefs.Add('materiallist', ftString, 255, False);  //原料列表
+      FieldDefs.Add('materiallist', ftString, 1000, False);  //原料列表
       IndexDefs.Add('idx_product_id', 'product_id', [IxPrimary]);
       CreateDataSet;
       Open;
@@ -560,8 +568,8 @@ begin
     keyValue:= keyValue + Format('"%s":%s,', ['workorder_id', fWorkorder_id]);
     //子工单编号
   if fWorkorder_code<>'' then
-    keyValue:= keyValue + Format('"%s":"%s","data":', ['workorder_code', fWorkorder_code]);
-  Result:= keyValue + fData + '}';
+    keyValue:= keyValue + Format('"%s":"%s",', ['workorder_code', fWorkorder_code]);
+  Result:= keyValue +'"data":'+ fData + '}';
 end;
 
 //按照固定字符串长度拆分，用于短信内容拆分
@@ -678,20 +686,20 @@ begin
 end;
 
 //MES扫描到、离岗
-function scanStaff(CONST fvApp_code, fvStaff_code: String): String;   //扫码考勤
+function scanStaff(CONST fvBarcode: String): String;   //扫码考勤
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.work.attendance", "action_workstation_scanning", ["'+ fvApp_code +'"], ["'+ fvStaff_code +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workstation_scanning", "'+ gvApp_code +'", "'+ fvBarcode +'"]');
 end;
 
 //查询员工是否在岗
-function queryStaffExist(CONST fvApp_code: String): Bool;
+function queryStaffExist : Bool;
 var
   vO, vResult: ISuperObject;
   vA: TSuperArray;
   i: Integer;
   vStaff_code, vStaff_name: String;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workstation", "get_employeelist", ["'+ fvApp_code +'"]]'));
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_employeelist", "'+ gvApp_code +'"]'));
   vA := vO['result.employeelist'].AsArray;
   if vA.Length<=0 then
     begin
@@ -720,12 +728,12 @@ begin
 end;
 
 //查询设备信息函数
-function queryEquipment(CONST fvApp_code: String): Bool;
+function queryEquipment : Bool;
 var
   vO, vResult: ISuperObject;
   vA: TSuperArray;
 begin
-  vO := SO(JsonRPCsearch_read(Aurl(gvServer_Host,gvServer_Port), gvDatabase, gvUserID, gvPassword, 'aas.equipment.equipment', '[["code","=","'+Trim(fvApp_code)+'"]]', '["id","code","name","active","mesline_id","workstation_id","state"]'));
+  vO := SO(JsonRPCsearch_read(Aurl(gvServer_Host,gvServer_Port), gvDatabase, gvUserID, gvPassword, 'aas.equipment.equipment', '[["code","=","'+Trim(gvApp_code)+'"]]', '["id","code","name","active","mesline_id","workstation_id","state"]'));
   vA := vO.A['result'];
   if vA.Length=0 then
     begin
@@ -778,7 +786,7 @@ function queryRedis(CONST fvQueue_name: String): Bool;
 var
   vO, vResult: ISuperObject;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserid) +', "'+ gvPassword +'", "aas.base.redis", "get_redis_settings", ["'+ fvQueue_name +'"]]'));
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserid) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_redis_settings", "'+ fvQueue_name +'"]'));
   vResult := SO(vO.AsObject.S['result']);
   if vResult.S['result']='false' then
     begin
@@ -793,62 +801,62 @@ begin
     end;
 end;
 
-function scanWorkticket(CONST fvApp_code, fvBarcode: String): String;
+function scanWorkticket(CONST fvBarcode: String): String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "get_workstation_workticket", ["'+ fvApp_code +'"], ["'+ fvBarcode +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_workstation_workticket", "'+ gvApp_code +'", "'+ fvBarcode +'"]');
 end;
 
 function scanContainer(CONST fvBarcode: String): String;   //扫描容器
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.container", "action_scanning", ["'+ fvBarcode +'"]]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_container_scanning", "'+ fvBarcode +'"]');
 end;
 
-function getLineWorkorder(CONST fvApp_code: String): String;
+function getLineWorkorder : String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "get_virtual_materiallist", "'+ fvApp_code +'"]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_virtual_materiallist", "'+ gvApp_code +'"]');
 end;
 
-function feedMaterial(CONST fvApp_code, fvBarcode: String): String;
+function feedMaterial(CONST fvBarcode: String): String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "action_feed_onstationclient", "'+ fvApp_code +'", "'+ fvBarcode +'"]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_feed_onstationclient", "'+ gvApp_code +'", "'+ fvBarcode +'"]');
 end;
 
-function getFeedMaterials(CONST fvApp_code: String): String;  //查询设备上料信息
+function getFeedMaterials : String;  //查询设备上料信息
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.feedmaterial", "get_workstation_materiallist", "'+ fvApp_code +'"]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_workstation_materiallist", "'+ gvApp_code +'"]');
 end;
 
 function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;   //工票工单开工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder.consume", "loading_consumelist_onclient", ['+ IntToStr(fvWorkorder_id) +'], ['+ IntToStr(fvWorkcenter_id) +']]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "loading_consumelist_onclient", '+ IntToStr(fvWorkorder_id) +', '+ IntToStr(fvWorkcenter_id) +']');
 end;
 
 
-function queryBadmode(CONST fvWorkcenter_id: Integer): String;    //获取不良模式
+function queryBadmode : String;    //获取不良模式
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.routing.badmode", "action_loading_badmodelist", ['+ IntToStr(fvWorkcenter_id) +']]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_loading_badmodelist", "'+ gvApp_code +'"]');
 end;
 
 function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;   //工票工单开工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_start_onstationclient", ['+ IntToStr(fvWorkticket_id) +'], ['+ IntToStr(fvApp_id) +']]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_start_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +']');
 end;
 
 function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workticket", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
 function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.workorder", "action_vtproduct_output", '+ IntToStr(gvStation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_vtproduct_output", '+ IntToStr(gvStation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
 end;
 
 function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   vO : ISuperObject;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.mes.operation.record", "action_functiontest", '+ gvApp_code +', '+ fvSerialnumber +', '+ BoolToStr(fvOperation_pass) +', '+ fvOperate_result+']'));
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_functiontest", "'+ gvApp_code +'", "'+ fvSerialnumber +'", '+ BoolToStr(fvOperation_pass) +', "'+ fvOperate_result+'"]'));
   if vO.B['result.success'] then  //上传设备数据成功
     begin
       Result := TRUE;

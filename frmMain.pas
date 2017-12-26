@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.StrUtils, System.Variants, System.Classes, System.IniFiles,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Buttons,
   Vcl.StdCtrls, Vcl.Grids, Vcl.DBGrids, Data.DB, O2DirSpy, Redis.Client, Redis.Commons, Redis.Values,
-  Redis.NetLib.Factory, Redis.NetLib.INDY;
+  Redis.NetLib.Factory, Redis.NetLib.INDY, sliderPanel;
 
 type
   Tfrm_main = class(TForm)
@@ -24,7 +24,6 @@ type
     lbl_fail_qty: TLabel;
     lbl_equipment_state: TLabel;
     shp_equipment_state: TShape;
-    lbl_tag_wo: TLabel;
     lbl_tag_product_code: TLabel;
     lbl_tag_todo_qty: TLabel;
     lbl_tag_done_qty: TLabel;
@@ -57,24 +56,23 @@ type
     lbl_tag_materiel: TLabel;
     dbg_workorder: TDBGrid;
     dbg_materiel: TDBGrid;
-    stb_tipsbar: TStatusBar;
     spb_submit: TSpeedButton;
     spb_refresh: TSpeedButton;
-    Timer1: TTimer;
     lbl_tag_state: TLabel;
     lbl_state: TLabel;
     spb_start: TSpeedButton;
     lbl_tag_weld_count: TLabel;
     lbl_weld_count: TLabel;
+    pnl_tipsbar: TPanel;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormDestroy(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
-    procedure Timer1Timer(Sender: TObject);
     procedure spb_startClick(Sender: TObject);
     procedure spb_submitClick(Sender: TObject);
+    procedure InfoTips(fvContent : String; fvColor : TColor = clRed);
     procedure RefreshWorkorder;
     procedure RefreshMaterials(fvConsumelist : String = '');
     procedure RefreshStaff;
@@ -108,12 +106,18 @@ implementation
 
 uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer;
 
+procedure Tfrm_main.InfoTips(fvContent : String; fvColor : TColor = clRed);
+begin
+  pnl_tipsbar.Caption := fvContent;
+  pnl_tipsbar.Font.Color := fvColor;
+end;
+
 procedure RefreshEquipment;
 begin
   if gvApp_code<>'' then
     begin
       frm_set.edt_app_code.Text := gvApp_code;
-      if queryEquipment(gvApp_code) then   //jsonRPC获取设备数据成功
+      if queryEquipment then   //jsonRPC获取设备数据成功
         begin
           //主窗口设备信息
           frm_main.lbl_equipment.Caption := '【'+ gvApp_code + '】' + #13 + gvApp_name;
@@ -184,7 +188,8 @@ begin
                 end
               else
                 begin
-                  Application.MessageBox(PChar('MDC服务地址获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
+                  frm_main.InfoTips('MDC服务地址获取失败，请联系管理员！');
+                  //Application.MessageBox(PChar('MDC服务地址获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
                   frm_set.ShowModal;
                   frm_set.TabSheet2.Show;
                   frm_set.lbl_host.Caption:='';
@@ -193,7 +198,8 @@ begin
             end
           else
             begin
-              Application.MessageBox(PChar('Redis队列名称必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
+              frm_main.InfoTips('Redis队列名称必须设置，请联系管理员！');
+              //Application.MessageBox(PChar('Redis队列名称必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
               frm_set.ShowModal;
               frm_set.TabSheet2.Show;
               frm_set.lbl_host.Caption:='';
@@ -202,7 +208,8 @@ begin
         end
       else
         begin
-          Application.MessageBox(PChar('设备信息获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
+          frm_main.InfoTips('设备信息获取失败，请联系管理员！');
+          //Application.MessageBox(PChar('设备信息获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
           frm_set.ShowModal;
           frm_set.TabSheet1.Show;
           frm_set.lbl_app_id.Caption := '';
@@ -219,7 +226,8 @@ begin
     end
   else
     begin
-      Application.MessageBox(PChar('设备编码必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('设备编码必须设置，请联系管理员！');
+      //Application.MessageBox(PChar('设备编码必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
       frm_set.ShowModal;
       frm_set.TabSheet1.Show;
       frm_set.lbl_app_id.Caption := '';
@@ -243,11 +251,13 @@ var
 begin
   if gvline_type='flowing' then
     begin
-      vO := SO(getLineWorkorder(gvApp_code));
+      vO := SO(getLineWorkorder);
       if vO.B['result.success'] then  //成功刷新主线子工单
         begin
           if gvApp_testing then
             begin
+              gvMainorder_id := vO.I['result.mainorder_id'];
+              gvMainorder_name := vO.S['result.mainorder_name'];
               gvWorkorder_id := vO.I['result.workorder_id'];
               gvWorkorder_name := vO.S['result.workorder_name'];
               frm_main.lbl_wo.Caption := gvWorkorder_name;
@@ -259,6 +269,8 @@ begin
             end
           else
             begin
+              gvMainorder_id := vO.I['result.mainorder_id'];
+              gvMainorder_name := vO.S['result.mainorder_name'];
               gvWorkorder_id := vO.I['result.workorder_id'];
               gvWorkorder_name := vO.S['result.workorder_name'];
               frm_main.lbl_wo.Caption := gvWorkorder_name;
@@ -304,9 +316,11 @@ begin
     end
   else if gvline_type='station' then
     begin
-      vO := SO(scanWorkticket(gvApp_code, gvWorkorder_barcode));
+      vO := SO(scanWorkticket(gvWorkorder_barcode));
       if vO.B['result.success'] then  //成功刷新工单
         begin
+          gvMainorder_id := vO.I['result.mainorder_id'];
+          gvMainorder_name := vO.S['result.mainorder_name'];
           gvWorkorder_id := vO.I['result.workorder_id'];
           gvWorkorder_name := vO.S['result.workorder_name'];
           frm_main.lbl_wo.Caption := gvWorkorder_name;
@@ -339,7 +353,7 @@ end;
 
 procedure Tfrm_main.RefreshStaff;
 begin
-  if queryStaffExist(gvApp_code) then  //设备上有操作工
+  if queryStaffExist then  //设备上有操作工
     begin
       lbl_operator.Caption := gvStaff_code;
       log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
@@ -359,7 +373,7 @@ var
   c , m: Integer;
   vExist : Bool;
 begin
-  vO_m := SO(getFeedMaterials(gvApp_code));
+  vO_m := SO(getFeedMaterials);
   if vO_m.B['result.success'] then  //成功得到设备所在工位的上料信息
     begin
       vMaterials := vO_m.A['result.materiallist'];
@@ -497,6 +511,7 @@ begin
                 end;
             end;
         end;
+      data_module.cds_materials.First;
     end
   else
     begin
@@ -537,17 +552,20 @@ begin
         begin
           if gvStaff_code='' then
             begin
-              Application.MessageBox(PChar('当前没有操作员，请先扫操作工条码，再操作机台！'),'错误',MB_ICONERROR);
+              frm_main.InfoTips('当前没有操作员，请先扫条码，再操作机台！');
+              //Application.MessageBox(PChar('当前没有操作员，请先扫操作工条码，再操作机台！'),'错误',MB_ICONERROR);
               Exit;
             end;
           if gvline_type='flowing' then    //主线上
             begin
-              Application.MessageBox(PChar('当前没有工单，请先刷新工单，再操作机台！'),'错误',MB_ICONERROR);
+              frm_main.InfoTips('当前没有工单，请先刷新工单，再操作机台!');
+              //Application.MessageBox(PChar('当前没有工单，请先刷新工单，再操作机台！'),'错误',MB_ICONERROR);
               Exit;
             end
           else if gvline_type='station' then    //工作站
             begin
-              Application.MessageBox(PChar('当前没有工单，请先扫工单条码，再操作机台！'),'错误',MB_ICONERROR);
+              frm_main.InfoTips('当前没有工单，请先刷新工单，再操作机台');
+              //Application.MessageBox(PChar('当前没有工单，请先扫工单条码，再操作机台！'),'错误',MB_ICONERROR);
               Exit;
             end;
         end;
@@ -558,7 +576,8 @@ procedure Collection_Data(const fvFileName : String);
 var
   vFile : TFileStream;
   vO, vTest: ISuperObject;
-  lvDataJson, lvMdcJson : String;
+  lvDataJson, lvMdcJson, vTest_field, vTest_value,
+  vTest_operator, vTest_SN_value, vTest_result_value : String;
   i, vP : integer;
 begin
   try
@@ -599,7 +618,7 @@ begin
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -662,8 +681,6 @@ begin
         end;
       1://扭矩焊文件
         begin
-          uvList.Clear;
-          uvData.Clear;
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
           uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
@@ -689,7 +706,9 @@ begin
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    log(lvDataJson);
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    log(lvMdcJson);
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -722,8 +741,6 @@ begin
         end;
       2://极柱焊文件
         begin
-          uvList.Clear;
-          uvData.Clear;
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
           uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
@@ -748,7 +765,7 @@ begin
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -781,7 +798,6 @@ begin
         end;
       3://测试机2文件
         begin
-          uvList.Clear;
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
           uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
@@ -798,11 +814,33 @@ begin
                     for i := 0 to uvData.Count-1 do
                       begin
                         vP := PosEx(#9,uvData.Strings[i]);
-                        FieldByName(Copy(uvData.Strings[i],1, vP-1)).AsString := Copy(uvData.Strings[i],vP+1, Length(uvData.Strings[i]));
+                        vTest_field := Copy(uvData.Strings[i],1, vP-1);
+                        vTest_value := Copy(uvData.Strings[i],vP+1, Length(uvData.Strings[i]));
+                        if vTest_field=gvTest_operator_field then vTest_operator := vTest_value;
+                        if vTest_field=gvTest_SN_field then vTest_SN_value := vTest_value;
+                        if vTest_field=gvTest_result_field then vTest_result_value := vTest_value;
+                        FieldByName(vTest_field).AsString := vTest_value;
                       end;
                     Post;
+                    if gvTest_operator_field<>'' then  //设置了操作员字段
+                      begin
+                        if gvStaff_code<>vTest_operator then   //采集到的操作员不在岗
+                          begin
+                            vO := SO(scanStaff('AM'+vTest_operator));
+                            if vO.B['result.success'] then  //扫码打卡成功
+                              begin
+                                frm_main.RefreshStaff;
+                              end
+                            else  //扫码打卡失败
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败，错误信息：'+vO.S['result.message']);
+                                frm_main.InfoTips('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败：'+vO.S['result.message']+'！');
+                                //Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                              end;
+                          end;
+                      end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','','809','1545615', IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -820,6 +858,28 @@ begin
                     gvSucceed:=gvSucceed+1;
                     frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
                     log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    if vTest_result_value=gvTest_pass_value then
+                      begin
+                        if testingRecord(vTest_SN_value, TRUE, vTest_result_value) then
+                          begin
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                          end
+                        else
+                          begin
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                          end;
+                      end
+                    else
+                      begin
+                        if testingRecord(vTest_SN_value, FALSE, vTest_result_value) then
+                          begin
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                          end
+                        else
+                          begin
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                          end;
+                      end;
                     Operation_check;
                     //EnableControls;
                   except on e:Exception do
@@ -866,10 +926,37 @@ begin
     end
   else
     begin
-      if gvWorkorder_rowno <> dbg_workorder.DataSource.DataSet.RecNo then
+      if gvProduct_code = '' then
         begin
-          Application.MessageBox(PChar('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！'),'错误',MB_ICONERROR);
-          Exit;
+          if dbg_workorder.DataSource.DataSet.RecNo>0 then
+            begin
+              gvWorkorder_rowno := dbg_workorder.DataSource.DataSet.RecNo;
+              lbl_wo.Caption := gvWorkorder_name;
+              with data_module.cds_workorder do
+                begin
+                  gvProduct_id := FieldByName('product_id').AsInteger;
+                  gvProduct_code := FieldByName('product_code').AsString;
+                  lbl_product_code.Caption := gvProduct_code;
+                  lbl_todo_qty.Caption := FieldByName('input_qty').AsString;
+                  // := FieldByName('todo_qty').AsFloat;
+                  lbl_good_qty.Caption := FieldByName('output_qty').AsString;
+                  lbl_done_qty.Caption := FieldByName('actual_qty').AsString;
+                  lbl_bad_qty.Caption := FieldByName('badmode_qty').AsString;
+                  gvWeld_count := FieldByName('weld_count').AsInteger;
+                  lbl_weld_count.Caption := IntToStr(gvWeld_count);
+                  gvConsumelist := '{"consumelist":' + FieldByName('materiallist').AsString + '}';
+                end;
+              RefreshMaterials(gvConsumelist);
+            end;
+        end
+      else
+        begin
+          if gvWorkorder_rowno <> dbg_workorder.DataSource.DataSet.RecNo then
+            begin
+              frm_main.InfoTips('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！');
+              //Application.MessageBox(PChar('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！'),'错误',MB_ICONERROR);
+              Exit;
+            end;
         end;
     end;
 end;
@@ -887,7 +974,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := False;
+  //CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -903,10 +990,10 @@ begin
   gvApp_code := ini_set.ReadString('equipment', 'app_code', gvApp_code);
   gvApp_secret := ini_set.ReadInteger('equipment', 'app_secret', gvApp_secret);
   gvApp_testing := ini_set.ReadBool('equipment', 'app_testing', gvApp_testing);
+  gvTest_operator_field := ini_set.ReadString('equipment', 'test_operator_field', gvTest_operator_field);
   gvTest_SN_field := ini_set.ReadString('equipment', 'test_sn_field', gvTest_SN_field);
   gvTest_result_field := ini_set.ReadString('equipment', 'test_result_field', gvTest_result_field);
   gvTest_pass_value := ini_set.ReadString('equipment', 'test_pass_value', gvTest_pass_value);
-
 
   //取Redis服务器信息
   gvQueue_name := ini_set.ReadString('redis', 'queue_name', gvQueue_name);
@@ -975,9 +1062,10 @@ begin
       vFinish := GetTickCount();
       if (vFinish - uvStart) / Length(uvInput) < 100 then
         begin
+          uvInput := UpperCase(uvInput);
           if copy(uvInput,1,2)='AM' then  //扫描到的是职员
             begin
-              vO := SO(scanStaff(gvApp_code, uvInput));
+              vO := SO(scanStaff(uvInput));
               if vO.B['result.success'] then  //扫码打卡成功
                 begin
                   RefreshStaff;
@@ -985,7 +1073,8 @@ begin
               else  //扫码打卡失败
                 begin
                   log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败，错误信息：'+vO.S['result.message']);
-                  Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                  frm_main.InfoTips('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！');
+                  //Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
                 end;
             end;
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
@@ -997,18 +1086,20 @@ begin
             end;
           if (copy(uvInput,1,2)='AC') OR (copy(uvInput,1,2)='AT') then  //扫描到的是物料
             begin
-              vO := SO(feedMaterial(gvApp_code, uvInput));
+              vO := SO(feedMaterial(uvInput));
               if vO.B['result.success'] then  //扫码上料成功
                 begin
                   if gvline_type='flowing' then RefreshMaterials(gvConsumelist)
                   else RefreshMaterials;
-                  Application.MessageBox(PChar('[INFO] 物料标签号【'+uvInput+'】上料成功！'),'提示信息',MB_ICONINFORMATION);
+                  frm_main.InfoTips('物料标签号【'+uvInput+'】上料成功！');
+                  //Application.MessageBox(PChar('[INFO] 物料标签号【'+uvInput+'】上料成功！'),'提示信息',MB_ICONINFORMATION);
                   log(DateTimeToStr(now())+', [INFO] 物料标签号【'+uvInput+'】上料成功，返回【'+vO.AsObject.S['result']);
                 end
-              else  //扫码打卡失败
+              else  //扫码上料失败
                 begin
                   log(DateTimeToStr(now())+', [ERROR] 物料标签号【'+uvInput+'】上料失败，错误信息：'+vO.S['result.message']);
-                  Application.MessageBox(PChar(' 物料标签号【'+uvInput+'】上料失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                  frm_main.InfoTips('物料标签号【'+uvInput+'】上料失败：'+vO.S['result.message']+'！');
+                  //Application.MessageBox(PChar(' 物料标签号【'+uvInput+'】上料失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
                 end;
             end;
         end
@@ -1036,13 +1127,16 @@ begin
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
     end;
 
-  if gvApp_testing then tbs_workorder.TabVisible:=False else tbs_workorder.TabVisible:=True;
+  //测试机不显示料单页签和报工按钮
+  tbs_workorder.TabVisible:=Not gvApp_testing;
+  spb_submit.Visible:=Not gvApp_testing;
 
   if gvCol_count>0 then
-    CreateDataSet(gvHeader_lines, gvPrimary_key, gvDeli)
+    DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli)
   else
     begin
-      Application.MessageBox(PChar('数据采集模板没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('数据采集模板没有设置，请联系管理员设置！');
+      //Application.MessageBox(PChar('数据采集模板没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
       frm_set.ShowModal;
       frm_set.TabSheet2.Show;
     end;
@@ -1056,7 +1150,8 @@ begin
      end
   else
     begin
-      Application.MessageBox(PChar('数据采集目录没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('数据采集目录没有设置，请联系管理员设置！');
+      //Application.MessageBox(PChar('数据采集目录没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
       frm_set.ShowModal;
       frm_set.TabSheet2.Show;
     end;
@@ -1070,7 +1165,6 @@ end;
 procedure Tfrm_main.OxygenDirectorySpy1ChangeDirectory(Sender: TObject; ChangeRecord: TDirectoryChangeRecord);
 var
   vFileName: String;
-
 begin
   uvDirSpy.Clear;
   uvList.Clear;
@@ -1104,7 +1198,8 @@ begin
     end
   else
     begin
-      Application.MessageBox(PChar(vO.S['result.message']),'错误',MB_ICONERROR);
+      frm_main.InfoTips(gvWorkorder_name+'工单开工失败:'+vO.S['result.message']);
+      //Application.MessageBox(PChar(vO.S['result.message']),'错误',MB_ICONERROR);
       log(DateTimeToStr(now())+', [INFO] '+gvWorkorder_name+'工单开工失败:'+vO.S['result.message']);
     end;
 end;
@@ -1118,20 +1213,23 @@ begin
   RefreshStaff;
   if gvStaff_code='' then
     begin
-      Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('当前没有操作员，不能报工！');
+      //Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
   if gvDoing_qty = 0 then
     begin
-      Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('待报工数量为0，不能报工！');
+      //Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
   if gvWorkorder_id<=0 then
     begin
-      Application.MessageBox(PChar('当前没有工单，不能报工！'),'错误',MB_ICONERROR);
+      frm_main.InfoTips('当前没有工单，不能报工！');
+      //Application.MessageBox(PChar('当前没有工单，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  vO := SO(queryBadmode(gvWorkcenter_id));
+  vO := SO(queryBadmode);
   if vO.B['result.success'] then  //获取不良模式成功
     begin
       vA := vO.A['result.badmodelist'];
@@ -1162,18 +1260,19 @@ begin
     end;
   if gvline_type='flowing' then    //主线上
     begin
-      Application.MessageBox(PChar('工单号【'+IntToStr(gvProduct_id)+'】报工失败，错误信息：'+FloatToStr(gvDoing_qty)+'！'),'错误',MB_ICONERROR);
       vO := SO(Virtual_FINISH(gvProduct_id,gvDoing_qty));
       if vO.B['result.success'] then  //报工成功
         begin
           lbl_doing_qty.Caption:='0';
           gvDoing_qty:=0;
+          RefreshWorkorder;
           RefreshMaterials(gvConsumelist);
         end
       else
         begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
-          Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+          frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
+          //Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
         end;
     end
   else if gvline_type='station' then    //工作站
@@ -1190,10 +1289,5 @@ begin
         end;
     end;
 end;
-
-procedure Tfrm_main.Timer1Timer(Sender: TObject);
-begin
-  stb_tipsbar.Panels[1].Text:= FormatDateTime('yyyy"年"m"月"d"日"hh:nn:ss',now);
-end;
-
+//stb_tipsbar.Panels[1].Text:= FormatDateTime('yyyy"年"m"月"d"日"hh:nn:ss',now);
 end.
