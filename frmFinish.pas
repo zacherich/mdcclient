@@ -102,7 +102,7 @@ var
   vBadmode_lines : String;
   vO: ISuperObject;
 begin
-  if lbl_bad_qty.Caption<>'0' then   //存在有不良模式,生产不良模式数组
+  if frm_finish.lbl_bad_qty.Caption<>'0' then   //存在有不良模式,生产不良模式数组
     begin
       vBadmode_lines := BadmodeToJson(data_module.cds_badmode);
     end
@@ -124,9 +124,9 @@ begin
           ini_set.WriteInteger('job', 'doing_qty', 0);
           ini_set.UpdateFile;
           gvDoing_qty:=0;
-          frm_main.RefreshWorkorder;
-          frm_main.RefreshMaterials;
-          self.Hide;
+          RefreshWorkorder;
+          RefreshMaterials;
+          frm_finish.Hide;
         end
       else
         begin

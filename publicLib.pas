@@ -10,6 +10,8 @@ uses
   procedure WorkorderInfoCDS;
   procedure MaterialsInfoCDS;
   procedure BadmodeCDS;
+  procedure MESLineCDS;
+  procedure StationCDS;
   Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
   function GetFileType(FileName:String):string;
   function GetLastLine(fName : String) : String;
@@ -40,6 +42,7 @@ uses
   function queryEquipment : Bool;    //查询设备信息
   function queryStaffExist : Bool;    //查询员工是否在岗
   function queryLineType(CONST fvLine_code: String): Bool;   //查询生产线类型
+  function switchMESLine(CONST fvMesline_id, fvWorkstation_id: Integer): Bool;   //切换生产线和工位
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
   function scanWorkticket(CONST fvBarcode: String): String;   //扫描工票工单
   function scanContainer(CONST fvBarcode: String): String;   //扫描容器
@@ -48,6 +51,7 @@ uses
   function getFeedMaterials : String;     //查询设备上料信息
   function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;  //查询工单上工位的消耗信息
   function queryBadmode : String;
+  function queryMESLine : String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
   function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
@@ -67,14 +71,14 @@ var
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
-  gvline_id : Integer;
-  gvline_code : String;
+  gvMESLine_id : Integer;
+  gvMESLine_name : String;
   gvline_type : String;
   gvWorkday_start : String;
   gvSchedule_id : Integer;
-  gvStation_id : Integer;
-  gvStation_code : String;
-  gvStation_name : String;
+  gvWorkstation_id : Integer;
+  gvWorkstation_code : String;
+  gvWorkstation_name : String;
   gvStaff_id : Integer;
   gvStaff_code : String;
   gvStaff_name : String;
@@ -138,7 +142,7 @@ var
 implementation
 
 uses
-  frmMain, dataModule, frmFinish;
+  dataModule, frmMain, frmFinish, frmMESLine;
 
 function EncodeUniCode(Str:WideString):string; //字符串－>PDU
 var
@@ -369,6 +373,60 @@ begin
           frm_finish.dbg_badmode.Columns[i].Title.Caption := '数量';
         end;
       frm_finish.dbg_badmode.Columns[i].Title.Alignment := taCenter;
+    end;
+end;
+
+procedure MESLineCDS;
+begin
+  with data_module.cds_mesline do
+    begin
+      FieldDefs.Clear;
+      Close;
+      FieldDefs.Add('mesline_id', ftInteger, 0, True);
+      FieldDefs.Add('mesline_name', ftString, 30,False);
+      FieldDefs.Add('mesline_type', ftString, 30,False);
+      FieldDefs.Add('stationlist', ftString, 1000, True);
+      IndexDefs.Add('idx_mesline_name', 'mesline_name', []);
+      CreateDataSet;
+      Open;
+    end;
+    frm_MESLine.dlc_mesline.ListSource := data_module.dsc_mesline;
+    frm_MESLine.dlc_mesline.KeyField := 'mesline_id';
+    frm_MESLine.dlc_mesline.ListField := 'mesline_name';
+end;
+
+procedure StationCDS;
+var i: Integer;
+begin
+  with data_module.cds_station do
+    begin
+      FieldDefs.Clear;
+      Close;
+      FieldDefs.Add('workstation_id', ftInteger, 0, True);
+      FieldDefs.Add('workstation_code', ftString, 30, True);
+      FieldDefs.Add('workstation_name', ftString, 50, True);
+      IndexDefs.Add('idx_workstation_name', 'workstation_name', []);
+      CreateDataSet;
+      Open;
+    end;
+  frm_MESLine.dbg_station.DataSource := data_module.dsc_station;
+  for i:=0 to frm_MESLine.dbg_station.Columns.Count-1 do
+    begin
+      if frm_MESLine.dbg_station.Columns[i].FieldName='workstation_id' then
+        begin
+          frm_MESLine.dbg_station.Columns[i].Visible := False;
+        end;
+      if frm_MESLine.dbg_station.Columns[i].FieldName='workstation_code' then
+        begin
+          frm_MESLine.dbg_station.Columns[i].Width := 80;
+          frm_MESLine.dbg_station.Columns[i].Title.Caption := '工位编码';
+        end;
+      if frm_MESLine.dbg_station.Columns[i].FieldName='workstation_name' then
+        begin
+          frm_MESLine.dbg_station.Columns[i].Width := 500;
+          frm_MESLine.dbg_station.Columns[i].Title.Caption := '工位名称';
+        end;
+      frm_MESLine.dbg_station.Columns[i].Title.Alignment := taCenter;
     end;
 end;
 
@@ -748,12 +806,12 @@ begin
       gvApp_state := vResult.S['state'];
       //gvApp_secret :=
       vA := vResult['mesline_id'].AsArray;
-      gvline_id := vA[0].AsInteger;
-      gvline_code := vA[1].AsString;
+      gvMESLine_id := vA[0].AsInteger;
+      gvMESLine_name := vA[1].AsString;
       vA := vResult['workstation_id'].AsArray;
-      gvStation_id := vA[0].AsInteger;
-      gvStation_code := GetCodeName('[', ']', vA[1].AsString,0);
-      gvStation_name := GetCodeName('[', ']', vA[1].AsString,1);
+      gvWorkstation_id := vA[0].AsInteger;
+      gvWorkstation_code := GetCodeName('[', ']', vA[1].AsString,0);
+      gvWorkstation_name := GetCodeName('[', ']', vA[1].AsString,1);
       Result := True;
     end;
 end;
@@ -779,6 +837,15 @@ begin
       gvWorkorder_id := vResult.I['workorder_id'];
       Result := True;
     end;
+end;
+
+//切换生产线或工位
+function switchMESLine(CONST fvMesline_id, fvWorkstation_id: Integer): Bool;
+var
+  vO : ISuperObject;
+begin
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_setequipment_workstation", "'+ gvApp_code +'", '+ IntToStr(fvMesline_id) +', '+ IntToStr(fvWorkstation_id) +']'));
+  Result := vO.B['result.success']
 end;
 
 //查询redis函数
@@ -837,6 +904,11 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_loading_badmodelist", "'+ gvApp_code +'"]');
 end;
 
+function queryMESLine : String;
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_loading_workstationlist"]');
+end;
+
 function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;   //工票工单开工
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_start_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +']');
@@ -849,7 +921,7 @@ end;
 
 function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_vtproduct_output", '+ IntToStr(gvStation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_vtproduct_output", '+ IntToStr(gvWorkstation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
 end;
 
 function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
@@ -857,14 +929,7 @@ var
   vO : ISuperObject;
 begin
   vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_functiontest", "'+ gvApp_code +'", "'+ fvSerialnumber +'", '+ BoolToStr(fvOperation_pass) +', "'+ fvOperate_result+'"]'));
-  if vO.B['result.success'] then  //上传设备数据成功
-    begin
-      Result := TRUE;
-    end
-  else
-    begin
-      Result := FALSE;
-    end;
+  Result := vO.B['result.success']
 end;
 
 end.

@@ -66,4 +66,28 @@ object data_module: Tdata_module
     Left = 320
     Top = 16
   end
+  object dsc_mesline: TDataSource
+    DataSet = cds_mesline
+    Left = 80
+    Top = 216
+  end
+  object cds_mesline: TClientDataSet
+    Aggregates = <>
+    AggregatesActive = True
+    Params = <>
+    Left = 80
+    Top = 152
+  end
+  object dsc_station: TDataSource
+    DataSet = cds_station
+    Left = 168
+    Top = 216
+  end
+  object cds_station: TClientDataSet
+    Aggregates = <>
+    AggregatesActive = True
+    Params = <>
+    Left = 168
+    Top = 152
+  end
 end

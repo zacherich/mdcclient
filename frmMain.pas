@@ -73,14 +73,12 @@ type
     procedure spb_startClick(Sender: TObject);
     procedure spb_submitClick(Sender: TObject);
     procedure InfoTips(fvContent : String; fvColor : TColor = clRed);
-    procedure RefreshWorkorder;
-    procedure RefreshMaterials(fvConsumelist : String = '');
-    procedure RefreshStaff;
     procedure lbl_tag_equipmentDblClick(Sender: TObject);
     procedure dbg_workorderDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
     procedure dbg_workorderDblClick(Sender: TObject);
     procedure spb_refreshClick(Sender: TObject);
+    procedure lbl_lineDblClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -90,6 +88,9 @@ type
     { Public declarations }
   end;
   procedure RefreshEquipment;
+  procedure RefreshWorkorder;
+  procedure RefreshMaterials(fvConsumelist : String = '');
+  procedure RefreshStaff;
   procedure Collection_Data(const fvFileName : String);
 
 var
@@ -104,7 +105,7 @@ implementation
 
 {$R *.dfm}
 
-uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer;
+uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer, frmMESLine;
 
 procedure Tfrm_main.InfoTips(fvContent : String; fvColor : TColor = clRed);
 begin
@@ -121,8 +122,8 @@ begin
         begin
           //主窗口设备信息
           frm_main.lbl_equipment.Caption := '【'+ gvApp_code + '】' + #13 + gvApp_name;
-          frm_main.lbl_line.Caption := gvline_code;
-          frm_main.lbl_station.Caption := gvStation_code + ' ' + gvStation_name;
+          frm_main.lbl_line.Caption := gvMESLine_name;
+          frm_main.lbl_station.Caption := gvWorkstation_code + ' ' + gvWorkstation_name;
           frm_main.lbl_equipment_state.Caption := gvApp_state;
           if gvApp_state='normal' then
             begin
@@ -161,21 +162,21 @@ begin
           frm_set.edt_app_secret.Text := IntToStr(gvApp_secret);
           frm_set.lbl_app_secret.Caption := IntToStr(gvApp_secret);
           frm_set.lbl_equipment_state.Caption := gvApp_state;
-          frm_set.lbl_line_id.Caption := IntToStr(gvline_id);
-          frm_set.lbl_line_code.Caption := gvline_code;
-          frm_set.lbl_station_id.Caption := IntToStr(gvStation_id);
-          frm_set.lbl_station_code.Caption := gvStation_code;
-          frm_set.lbl_station_name.Caption := gvStation_name;
-          if gvline_code<>'' then
+          frm_set.lbl_line_id.Caption := IntToStr(gvMESLine_id);
+          frm_set.lbl_line_code.Caption := gvMESLine_name;
+          frm_set.lbl_station_id.Caption := IntToStr(gvWorkstation_id);
+          frm_set.lbl_station_code.Caption := gvWorkstation_code;
+          frm_set.lbl_station_name.Caption := gvWorkstation_name;
+          if gvMESLine_name<>'' then
             begin
-              if queryLineType(gvline_code) then
+              if queryLineType(gvMESLine_name) then
                 begin
-                  log(DateTimeToStr(now())+', [Info] 生产线【'+gvline_code+'】获取产线类型：'+gvline_type);
+                  log(DateTimeToStr(now())+', [Info] 生产线【'+gvMESLine_name+'】获取产线类型：'+gvline_type);
                   //获取到了产线类型
                 end
               else
                 begin
-                  log(DateTimeToStr(now())+', [Eror] 生产线【'+gvline_code+'】获取产线类型失败！');
+                  log(DateTimeToStr(now())+', [Eror] 生产线【'+gvMESLine_name+'】获取产线类型失败！');
                 end;
             end;
           if gvQueue_name<>'' then
@@ -189,7 +190,6 @@ begin
               else
                 begin
                   frm_main.InfoTips('MDC服务地址获取失败，请联系管理员！');
-                  //Application.MessageBox(PChar('MDC服务地址获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
                   frm_set.ShowModal;
                   frm_set.TabSheet2.Show;
                   frm_set.lbl_host.Caption:='';
@@ -243,12 +243,14 @@ begin
     end;
 end;
 
-procedure Tfrm_main.RefreshWorkorder;
+procedure RefreshWorkorder;
 var
   vO, vResult_v: ISuperObject;
   vVirtuallist : TSuperArray;
   i : Integer;
 begin
+  frm_main.lbl_wo.Caption := '无';
+  data_module.cds_workorder.EmptyDataSet;
   if gvline_type='flowing' then
     begin
       vO := SO(getLineWorkorder);
@@ -257,7 +259,7 @@ begin
           if gvApp_testing then
             begin
               //切换工单测试机待报工数量改为零。
-              if gvWorkorder_name<>vO.S['result.workorder_name'] then lbl_doing_qty.Caption := '0';
+              if gvWorkorder_name<>vO.S['result.workorder_name'] then frm_main.lbl_doing_qty.Caption := '0';
 
               gvMainorder_id := vO.I['result.mainorder_id'];
               gvMainorder_name := vO.S['result.mainorder_name'];
@@ -282,11 +284,10 @@ begin
                 begin
                   with data_module.cds_workorder do
                     begin
-                      EmptyDataSet;
                       for i := 0 to vVirtuallist.Length-1 do
                         begin
-                          Append;
                           vResult_v := SO(vVirtuallist[i].AsString);
+                          Append;
                           FieldByName('product_id').AsInteger := vResult_v.I['product_id'];
                           FieldByName('product_code').AsString := vResult_v.S['product_code'];
                           FieldByName('input_qty').AsFloat := vResult_v.C['input_qty'];
@@ -354,22 +355,22 @@ begin
     end;
 end;
 
-procedure Tfrm_main.RefreshStaff;
+procedure RefreshStaff;
 begin
   if queryStaffExist then  //设备上有操作工
     begin
-      lbl_operator.Caption := gvStaff_code;
+      frm_main.lbl_operator.Caption := gvStaff_code;
       log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，有员工号【'+gvStaff_code+'】的'+gvStaff_name+'在岗！');
     end
   else  //设备上没有操作工
     begin
-      lbl_operator.Caption := '';
+      frm_main.lbl_operator.Caption := '';
       log(DateTimeToStr(now())+', [INFO] 设备号【'+gvApp_code+'】上，没有有员工号在岗！');
     end;
 end;
 
 
-procedure Tfrm_main.RefreshMaterials(fvConsumelist : String = '');
+procedure RefreshMaterials(fvConsumelist : String = '');
 var
   vO_c, vO_m, vResult_c, vResult_m: ISuperObject;
   vMaterials, vConsume : TSuperArray;
@@ -427,46 +428,20 @@ begin
                   FieldByName('material_code').AsString := vResult_c.S['material_code'];
                   FieldByName('input_qty').AsFloat := vResult_c.C['input_qty'];
                   FieldByName('consume_qty').AsFloat := vResult_c.C['consume_qty'];
-                  FieldByName('material_qty').AsFloat := 0;
                   FieldByName('consume_unit').AsFloat := vResult_c.C['consume_unit'];
                   FieldByName('leave_qty').AsFloat := vResult_c.C['leave_qty'];
-                  FieldByName('materiallot_id').AsInteger := 0;
-                  FieldByName('materiallot_name').AsString := '';
-                  Post;
-                end;
-              for m := 0 to vMaterials.Length-1 do    //如果有相同料号的上料库存，则更新dataset，否则插入新记录
-                begin
-                  vResult_m := SO(vMaterials[m].AsString);
-                  vExist := False;
-                  First;
-                  while not eof do
+                  for m := 0 to vMaterials.Length-1 do    //如果有相同料号的上料库存，则更新dataset，否则插入新记录
                     begin
-                      if vResult_m.I['material_id']=FieldByName('material_id').AsInteger then   //消耗信息和上料信息中有同样的原料
+                      vResult_m := SO(vMaterials[m].AsString);
+                      if vResult_c.I['material_id']=vResult_m.I['material_id'] then   //消耗信息和上料信息中有同样的原料
                         begin
-                          vExist := True;
-                          Edit;
                           FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
                           FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
                           FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
-                          Post;
                           Break;
                         end;
-                      Next;
                     end;
-                  if Not vExist then
-                    begin
-                      Append;
-                      FieldByName('material_id').AsInteger := vResult_m.I['material_id'];
-                      FieldByName('material_code').AsString := vResult_m.S['material_code'];
-                      FieldByName('input_qty').AsFloat := 0;
-                      FieldByName('consume_qty').AsFloat := 0;
-                      FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
-                      FieldByName('consume_unit').AsFloat := 0;
-                      FieldByName('leave_qty').AsFloat := 0;
-                      FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
-                      FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
-                      Post;
-                    end;
+                  Post;
                 end;
             end;
         end
@@ -627,7 +602,7 @@ begin
                             vO := SO(scanStaff('AM'+vTest_operator));
                             if vO.B['result.success'] then  //扫码打卡成功
                               begin
-                                frm_main.RefreshStaff;
+                                RefreshStaff;
                               end
                             else  //扫码打卡失败
                               begin
@@ -638,7 +613,7 @@ begin
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -724,7 +699,7 @@ begin
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
                     log(lvDataJson);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     log(lvMdcJson);
                     Weld2yield;
                     TThread.CreateAnonymousThread(
@@ -782,7 +757,7 @@ begin
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -846,7 +821,7 @@ begin
                             vO := SO(scanStaff('AM'+vTest_operator));
                             if vO.B['result.success'] then  //扫码打卡成功
                               begin
-                                frm_main.RefreshStaff;
+                                RefreshStaff;
                               end
                             else  //扫码打卡失败
                               begin
@@ -857,7 +832,7 @@ begin
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -991,7 +966,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := False;
+  //CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1135,6 +1110,8 @@ begin
   WorkorderInfoCDS;
   MaterialsInfoCDS;
   BadmodeCDS;
+  MESLineCDS;
+  StationCDS;
   RefreshEquipment;
   RefreshWorkorder;
   RefreshMaterials;
@@ -1174,6 +1151,76 @@ begin
     end;
 end;
 
+procedure Tfrm_main.lbl_lineDblClick(Sender: TObject);
+var
+  vO, vResult: ISuperObject;
+  vA: TSuperArray;
+  i: Integer;
+begin
+  if gvDoing_qty = 0 then
+    begin
+      if gvline_type='flowing' then    //主线上
+        begin
+          vO := SO(queryMESLine);
+          if vO.B['result.success'] then  //获取不良模式成功
+            begin
+              vA := vO.A['result.records'];
+              if vA.Length>0 then
+                begin
+                  with data_module.cds_mesline do
+                    begin
+                      EmptyDataSet;
+                      for i := 0 to vA.Length-1 do
+                        begin
+                          vResult := SO(vA[i].AsString);
+                          if vResult.S['mesline_type']='flowing' then
+                            begin
+                              Append;
+                              FieldByName('mesline_id').AsInteger := vResult.I['mesline_id'];
+                              FieldByName('mesline_name').AsString := vResult.S['mesline_name'];
+                              FieldByName('mesline_type').AsString := vResult.S['mesline_type'];
+                              FieldByName('stationlist').AsString := vResult.S['stationlist'];
+                              Post;
+                            end;
+                        end;
+                      frm_MESLine.dlc_mesline.KeyValue := gvMESLine_id;
+                    end;
+                  frm_MESLine.lbl_line.Caption := gvMESLine_name;
+                  frm_MESLine.lbl_station.Caption := gvWorkstation_name;
+                  frm_MESLine.Show;
+                end
+              else
+                begin
+                  frm_main.InfoTips('MES还没有生产线，请联系管理员');
+                  log(DateTimeToStr(now())+', [INFO] MES还没有生产线，请联系管理员');
+                end;
+            end
+          else
+            begin
+              with data_module.cds_badmode do
+                begin
+                  EmptyDataSet;
+                end;
+              frm_main.InfoTips('获取生产线信息失败:'+vO.S['result.message']);
+              log(DateTimeToStr(now())+', [INFO] 获取生产线信息失败:'+vO.S['result.message']);
+            end;
+        end
+      else if gvline_type='station' then    //工作站
+        begin
+          frm_main.InfoTips('非主线设备不能切换生产线！');
+          log(DateTimeToStr(now())+', [INFO] 非主线设备不能切换生产线！');
+        end;
+    end
+  else
+    begin
+      if gvWorkorder_rowno <> dbg_workorder.DataSource.DataSet.RecNo then
+        begin
+          frm_main.InfoTips('待报工数量为:'+IntToStr(gvDoing_qty)+'，不能切换产线！');
+          Exit;
+        end;
+    end;
+end;
+
 procedure Tfrm_main.lbl_tag_equipmentDblClick(Sender: TObject);
 begin
   frm_set.ShowModal;
@@ -1202,7 +1249,7 @@ procedure Tfrm_main.spb_refreshClick(Sender: TObject);
 begin
   RefreshEquipment;
   RefreshWorkorder;
-  //RefreshMaterials;
+  RefreshMaterials;
   RefreshStaff;
 end;
 

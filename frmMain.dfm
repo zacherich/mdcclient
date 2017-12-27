@@ -256,6 +256,7 @@ object frm_main: Tfrm_main
         Font.Name = 'Tahoma'
         Font.Style = []
         ParentFont = False
+        OnDblClick = lbl_lineDblClick
         ExplicitLeft = 86
       end
       object lbl_tag_station: TLabel
@@ -751,6 +752,10 @@ object frm_main: Tfrm_main
     end
     object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25

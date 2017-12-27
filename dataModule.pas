@@ -15,6 +15,10 @@ type
     cds_workorder: TClientDataSet;
     dsc_materials: TDataSource;
     cds_materials: TClientDataSet;
+    dsc_mesline: TDataSource;
+    cds_mesline: TClientDataSet;
+    dsc_station: TDataSource;
+    cds_station: TClientDataSet;
     procedure cds_mdcNewRecord(DataSet: TDataSet);
     procedure cds_badmodeAggregates0Update(Agg: TAggregate);
   private
