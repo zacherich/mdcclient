@@ -256,6 +256,9 @@ begin
         begin
           if gvApp_testing then
             begin
+              //切换工单测试机待报工数量改为零。
+              if gvWorkorder_name<>vO.S['result.workorder_name'] then lbl_doing_qty.Caption := '0';
+
               gvMainorder_id := vO.I['result.mainorder_id'];
               gvMainorder_name := vO.S['result.mainorder_name'];
               gvWorkorder_id := vO.I['result.workorder_id'];
@@ -617,6 +620,23 @@ begin
                           end;
                       end;
                     Post;
+                    if gvTest_operator_field<>'' then  //设置了操作员字段
+                      begin
+                        if gvStaff_code<>vTest_operator then   //采集到的操作员不在岗
+                          begin
+                            vO := SO(scanStaff('AM'+vTest_operator));
+                            if vO.B['result.success'] then  //扫码打卡成功
+                              begin
+                                frm_main.RefreshStaff;
+                              end
+                            else  //扫码打卡失败
+                              begin
+                                log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败，错误信息：'+vO.S['result.message']);
+                                frm_main.InfoTips('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败：'+vO.S['result.message']+'！');
+                                //Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                              end;
+                          end;
+                      end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
                     lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvStation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
@@ -660,11 +680,8 @@ begin
                                 log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
                               end;
                           end;
-                      end
-                    else
-                      begin
-                        Weld2yield;
                       end;
+                    Weld2yield;
                     log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                     Operation_check;
                     //EnableControls;
@@ -974,7 +991,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  //CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1130,7 +1147,7 @@ begin
   //测试机不显示料单页签和报工按钮
   tbs_workorder.TabVisible:=Not gvApp_testing;
   spb_submit.Visible:=Not gvApp_testing;
-
+  if gvApp_testing then lbl_tag_doing_qty.Caption:='已测试' else lbl_tag_doing_qty.Caption:='待报工';
   if gvCol_count>0 then
     DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli)
   else
@@ -1183,7 +1200,10 @@ end;
 
 procedure Tfrm_main.spb_refreshClick(Sender: TObject);
 begin
+  RefreshEquipment;
   RefreshWorkorder;
+  //RefreshMaterials;
+  RefreshStaff;
 end;
 
 procedure Tfrm_main.spb_startClick(Sender: TObject);

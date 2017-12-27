@@ -9,7 +9,8 @@ uses
   frmLogin in 'frmLogin.pas' {frm_login},
   frmFinish in 'frmFinish.pas' {frm_finish},
   frmContainer in 'frmContainer.pas' {frm_container},
-  sliderPanel in 'sliderPanel.pas';
+  sliderPanel in 'sliderPanel.pas',
+  frmLine in 'frmLine.pas' {frm_Line};
 
 {$R *.res}
 
@@ -21,6 +22,7 @@ begin
   Application.CreateForm(Tfrm_finish, frm_finish);
   Application.CreateForm(Tdata_module, data_module);
   Application.CreateForm(Tfrm_container, frm_container);
+  Application.CreateForm(Tfrm_Line, frm_Line);
   if frmLogin.Login() then  //呼叫登录窗口：就这一行，简单吧！
     Application.Run;
 end.

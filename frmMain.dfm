@@ -653,16 +653,12 @@ object frm_main: Tfrm_main
     Top = 254
     Width = 523
     Height = 417
-    ActivePage = tbs_collection
+    ActivePage = tbs_workorder
     Align = alClient
     TabOrder = 2
     object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Splitter1: TSplitter
         Left = 0
         Top = 235
@@ -684,7 +680,7 @@ object frm_main: Tfrm_main
         object lbl_tag_workorder: TLabel
           Left = 1
           Top = 1
-          Width = 60
+          Width = 513
           Height = 18
           Align = alTop
           Caption = #24037#21333#20449#24687
@@ -697,6 +693,7 @@ object frm_main: Tfrm_main
           ParentColor = False
           ParentFont = False
           Transparent = False
+          ExplicitWidth = 60
         end
         object dbg_workorder: TDBGrid
           Left = 1
@@ -726,13 +723,14 @@ object frm_main: Tfrm_main
         object lbl_tag_materiel: TLabel
           Left = 1
           Top = 1
-          Width = 75
+          Width = 513
           Height = 18
           Align = alTop
           Caption = #21407#26448#26009#20449#24687
           Color = clMoneyGreen
           ParentColor = False
           Transparent = False
+          ExplicitWidth = 75
         end
         object dbg_materiel: TDBGrid
           Left = 1
