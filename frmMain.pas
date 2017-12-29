@@ -209,7 +209,6 @@ begin
       else
         begin
           frm_main.InfoTips('设备信息获取失败，请联系管理员！');
-          //Application.MessageBox(PChar('设备信息获取失败，请联系管理员重新设置！'),'错误',MB_ICONERROR);
           frm_set.ShowModal;
           frm_set.TabSheet1.Show;
           frm_set.lbl_app_id.Caption := '';
@@ -227,7 +226,6 @@ begin
   else
     begin
       frm_main.InfoTips('设备编码必须设置，请联系管理员！');
-      //Application.MessageBox(PChar('设备编码必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
       frm_set.ShowModal;
       frm_set.TabSheet1.Show;
       frm_set.lbl_app_id.Caption := '';
@@ -299,6 +297,15 @@ begin
                           else FieldByName('weld_count').AsInteger := vResult_v.I['weld_count'];
                           FieldByName('materiallist').AsString := vResult_v.S['materiallist'];
                           Post;
+                        end;
+                      First;
+                      while not eof do
+                        begin
+                          if FieldByName('product_id').AsInteger=gvProduct_id then   //当前选中的产品高良显示
+                            begin
+                              Break;
+                            end;
+                          Next;
                         end;
                     end;
                 end
@@ -375,7 +382,6 @@ var
   vO_c, vO_m, vResult_c, vResult_m: ISuperObject;
   vMaterials, vConsume : TSuperArray;
   c , m: Integer;
-  vExist : Bool;
 begin
   vO_m := SO(getFeedMaterials);
   if vO_m.B['result.success'] then  //成功得到设备所在工位的上料信息
@@ -966,7 +972,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  //CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1029,6 +1035,11 @@ begin
   OxygenDirectorySpy1 := TOxygenDirectorySpy.Create(Self);
   OxygenDirectorySpy1.WatchSubTree := gvSubfolder;
   OxygenDirectorySpy1.OnChangeDirectory := OxygenDirectorySpy1ChangeDirectory;
+
+  //将主窗口里字段置空
+  lbl_equipment.Caption := '无';
+  lbl_line.Caption := '无';
+  lbl_station.Caption := '无';
 end;
 
 procedure Tfrm_main.FormDestroy(Sender: TObject);
@@ -1107,6 +1118,14 @@ end;
 
 procedure Tfrm_main.FormShow(Sender: TObject);
 begin
+  if gvCol_count>0 then
+    DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli)
+  else
+    begin
+      frm_main.InfoTips('数据采集模板没有设置，请联系管理员设置！');
+      frm_set.ShowModal;
+      frm_set.TabSheet2.Show;
+    end;
   WorkorderInfoCDS;
   MaterialsInfoCDS;
   BadmodeCDS;
@@ -1125,15 +1144,6 @@ begin
   tbs_workorder.TabVisible:=Not gvApp_testing;
   spb_submit.Visible:=Not gvApp_testing;
   if gvApp_testing then lbl_tag_doing_qty.Caption:='已测试' else lbl_tag_doing_qty.Caption:='待报工';
-  if gvCol_count>0 then
-    DataCollectionCDS(gvHeader_lines, gvPrimary_key, gvDeli)
-  else
-    begin
-      frm_main.InfoTips('数据采集模板没有设置，请联系管理员设置！');
-      //Application.MessageBox(PChar('数据采集模板没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
-      frm_set.ShowModal;
-      frm_set.TabSheet2.Show;
-    end;
   if DirectoryExists(gvData_path) then
      begin
         with OxygenDirectorySpy1 do begin

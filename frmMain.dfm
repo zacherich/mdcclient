@@ -3,7 +3,7 @@ object frm_main: Tfrm_main
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
-  Caption = #23433#36153#35834#23425#24503'MES'
+  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.2'
   ClientHeight = 671
   ClientWidth = 523
   Color = clBtnFace
@@ -752,10 +752,6 @@ object frm_main: Tfrm_main
     end
     object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25

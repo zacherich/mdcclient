@@ -450,12 +450,29 @@ end;
 
 procedure Tfrm_set.FormCreate(Sender: TObject);
 begin
+  //将设置窗口字段置空
+  lbl_app_id.Caption := '';
+  lbl_app_code.Caption := '';
+  lbl_app_name.Caption := '无';
+  edt_app_secret.Text := '';
+  lbl_app_secret.Caption := '';
+  lbl_line_id.Caption := '';
+  lbl_line_code.Caption := '无';
+  lbl_station_id.Caption := '';
+  lbl_station_code.Caption := '无';
+  lbl_station_name.Caption := '无';
+  lbl_equipment_state.Caption := '无';
+  lbl_data_path.Caption := '无';
+  lbl_template_file.Caption := '无';
+  lbl_host.Caption := '';
+  lbl_port.Caption := '';
   cmb_datatype.Visible := False;
 end;
 
 procedure Tfrm_set.FormShow(Sender: TObject);
 var vList : TStringList;
     vFile : TFileStream;
+    i : Integer;
 begin
   //显示设备信息
   ckb_testing.Checked := gvApp_testing;
@@ -482,17 +499,10 @@ begin
         case rdg_filetype.ItemIndex of
           0://普通文本文件
           begin
-            //if (vList.Count>0) and (vList.Count<100) then
-              rdt_template.Lines.Text:=vList.Text;
-            //else
-            //  begin
-            //    for i := 0 to 10 do
-            //      begin
-            //        rdt_template.Lines.Add(vList[i]);
-            //      end;
-            //  end;
+            rdt_template.Lines.Text:=vList.Text;
             spn_header_line.MinValue:=1;
             spn_header_line.MaxValue:=rdt_template.Lines.Count;
+            spn_header_line.Value := gvHeader_row;
           end;
           1..3://扭矩焊、极柱焊、测试机2文件
           begin
@@ -503,6 +513,8 @@ begin
                 spn_begin_line.MaxValue:=rdt_template.Lines.Count;
                 spn_end_line.MinValue:=1;
                 spn_end_line.MaxValue:=rdt_template.Lines.Count;
+                spn_begin_line.Value := gvBegin_row;
+                spn_end_line.Value := gvEnd_row;
               end;
           end;
         end;
@@ -512,6 +524,26 @@ begin
       end;
     end;
   ckb_testingClick(Self);  //显示测试机字段
+  spb_load_fileClick(Self);
+  if gvCol_count>0 then
+    begin
+      if (stg_header_line_set.RowCount-1)>=gvHeader_list.Count then    //列数一致
+        begin
+          for i := 0 to gvHeader_list.Count-1 do
+            begin
+              stg_header_line_set.Cells[2,i+1] := gvHeader_list.Names[i];
+              stg_header_line_set.Cells[3,i+1] := gvHeader_list.ValueFromIndex[i];
+            end;
+        end
+      else
+        begin
+          for i := 1 to stg_header_line_set.RowCount do
+            begin
+              stg_header_line_set.Cells[2,i] := gvHeader_list.Names[i-1];
+              stg_header_line_set.Cells[3,i] := gvHeader_list.ValueFromIndex[i-1];
+            end;
+        end;
+    end;
 end;
 
 procedure Tfrm_set.lbl_data_pathClick(Sender: TObject);
@@ -850,7 +882,7 @@ begin
         org := Self.ScreenToClient(ClientToScreen(R.topleft));
         with cmb_datatype do
         begin
-          setbounds(org.X, org.Y, R.right - R.left, height);
+          setbounds(org.X-16, org.Y-66, R.right - R.left, height);
           itemindex := Items.IndexOf(Cells[ACol, ARow]);
           Show;
           BringTofront;

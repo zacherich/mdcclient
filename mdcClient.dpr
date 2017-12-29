@@ -17,6 +17,7 @@ uses
 begin
   Application.MainFormOnTaskbar := True;
 
+  Application.Title := '安费诺宁德MES';
   Application.CreateForm(Tfrm_main, frm_main);
   Application.CreateForm(Tfrm_set, frm_set);
   Application.CreateForm(Tfrm_finish, frm_finish);

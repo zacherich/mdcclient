@@ -169,7 +169,7 @@ begin
 end;
 
 Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
-var i: Integer;
+var i : Integer;
 begin
   gvHeader_list := TStringList.Create;
   gvHeader_list.Clear;
@@ -190,7 +190,6 @@ begin
               FieldDefs.Add(gvHeader_list.Names[i], ftFloat, 0, False)
             else if gvHeader_list.ValueFromIndex[i]='Integer' then
               FieldDefs.Add(gvHeader_list.Names[i], ftInteger, 0, False);
-            //FieldDefs.Items[i].Size:=20;
           end;
         FieldDefs.Add('mdc_state', ftInteger, 0, False);
         //创建索引字段，多个字段用分号隔开; 默认升序排列

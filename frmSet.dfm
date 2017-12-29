@@ -30,7 +30,7 @@ object frm_set: Tfrm_set
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = TabSheet1
+    ActivePage = TabSheet2
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -401,7 +401,7 @@ object frm_set: Tfrm_set
         ParentFont = False
       end
       object lbl_data_path: TLabel
-        Left = 126
+        Left = 129
         Top = 11
         Width = 86
         Height = 18
@@ -568,7 +568,7 @@ object frm_set: Tfrm_set
           MinValue = 1
           ParentFont = False
           TabOrder = 1
-          Value = 0
+          Value = 1
           OnChange = spn_header_lineChange
         end
         object cmb_datatype: TComboBox
@@ -653,7 +653,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 6
-          Value = 1
+          Value = 0
           OnChange = spn_end_lineChange
         end
         object spn_begin_line: TSpinEdit
@@ -664,7 +664,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 7
-          Value = 1
+          Value = 0
           OnChange = spn_begin_lineChange
         end
         object edt_queue_name: TEdit
