@@ -864,14 +864,13 @@ object frm_main: Tfrm_main
     Font.Height = -15
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
-    ParentBackground = False
     ParentFont = False
     TabOrder = 3
   end
-  object tim_cleartips: TTimer
+  object tim_cleartip: TTimer
     Enabled = False
-    Interval = 2000
-    OnTimer = tim_cleartipsTimer
+    Interval = 3000
+    OnTimer = tim_cleartipTimer
     Left = 488
     Top = 217
   end

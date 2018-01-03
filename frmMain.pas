@@ -64,6 +64,7 @@ type
     lbl_tag_weld_count: TLabel;
     lbl_weld_count: TLabel;
     pnl_tipsbar: TPanel;
+    tim_cleartips: TTimer;
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -79,6 +80,7 @@ type
     procedure dbg_workorderDblClick(Sender: TObject);
     procedure spb_refreshClick(Sender: TObject);
     procedure lbl_lineDblClick(Sender: TObject);
+    procedure tim_cleartipsTimer(Sender: TObject);
   private
     { Private declarations }
   public
@@ -111,6 +113,7 @@ procedure Tfrm_main.InfoTips(fvContent : String; fvColor : TColor = clRed);
 begin
   pnl_tipsbar.Caption := fvContent;
   pnl_tipsbar.Font.Color := fvColor;
+  tim_cleartips.Enabled := True;
 end;
 
 procedure RefreshEquipment;
@@ -1366,5 +1369,12 @@ begin
         end;
     end;
 end;
+procedure Tfrm_main.tim_cleartipsTimer(Sender: TObject);
+begin
+  pnl_tipsbar.Caption := '';
+  pnl_tipsbar.Color := clBtnFace;
+  tim_cleartips.Enabled := False;
+end;
+
 //stb_tipsbar.Panels[1].Text:= FormatDateTime('yyyy"年"m"月"d"日"hh:nn:ss',now);
 end.

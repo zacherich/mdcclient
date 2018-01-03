@@ -45,7 +45,7 @@ begin
     begin
       vO := SO('{"stationlist":' + data_module.cds_mesline.FieldByName('stationlist').AsString + '}');
       vA := vO.A['stationlist'];
-      if vA.Length<>0 then   //Ñ¡ÔñµÄÉú²úÏßÏÂÓĞ¹¤Î»ĞÅÏ¢
+      if vA.Length<>0 then   //é€‰æ‹©çš„ç”Ÿäº§çº¿ä¸‹æœ‰å·¥ä½ä¿¡æ¯
         begin
           with data_module.cds_station do
             begin
@@ -62,7 +62,7 @@ begin
               First;
               while not eof do
                 begin
-                  if FieldByName('workstation_id').AsInteger=gvWorkstation_id then   //ÏûºÄĞÅÏ¢ºÍÉÏÁÏĞÅÏ¢ÖĞÓĞÍ¬ÑùµÄÔ­ÁÏ
+                  if FieldByName('workstation_id').AsInteger=gvWorkstation_id then   //æ¶ˆè€—ä¿¡æ¯å’Œä¸Šæ–™ä¿¡æ¯ä¸­æœ‰åŒæ ·çš„åŸæ–™
                     begin
                       Break;
                     end;
@@ -77,18 +77,18 @@ procedure Tfrm_MESLine.dbg_stationDblClick(Sender: TObject);
 var
   vMesline_id, vWorkstation_id : Integer;
 begin
-  if dbg_station.DataSource.DataSet.RecNo>0 then  //¹¤Î»ĞÅÏ¢ÖĞÓĞ¼ÇÂ¼
+  if dbg_station.DataSource.DataSet.RecNo>0 then  //å·¥ä½ä¿¡æ¯ä¸­æœ‰è®°å½•
     begin
       vMesline_id := frm_MESLine.dlc_mesline.KeyValue;
       vWorkstation_id := dbg_station.DataSource.DataSet.FieldByName('workstation_id').AsInteger;
-      //Ñ¡ÔñµÄ²úÏßºÍ¹¤Î»ºÍµ±Ç°²úÏß¹¤Î»Ò»ÖÂ
+      //é€‰æ‹©çš„äº§çº¿å’Œå·¥ä½å’Œå½“å‰äº§çº¿å·¥ä½ä¸€è‡´
       if (vMesline_id=gvMESLine_id) and (vWorkstation_id=gvWorkstation_id) then
         begin
           Self.Hide;
         end
-      else  //Ñ¡ÔñµÄ²úÏßºÍ¹¤Î»ºÍµ±Ç°²úÏß¹¤Î»²»Ò»ÖÂ
+      else  //é€‰æ‹©çš„äº§çº¿å’Œå·¥ä½å’Œå½“å‰äº§çº¿å·¥ä½ä¸ä¸€è‡´
         begin
-          //ÇĞ»»²úÏß³É¹¦
+          //åˆ‡æ¢äº§çº¿æˆåŠŸ
           if switchMESLine(vMesline_id, vWorkstation_id) then
             begin
               Self.Hide;
@@ -97,10 +97,10 @@ begin
               RefreshMaterials;
               RefreshStaff;
             end
-          else  //ÇĞ»»²úÏßÊ§°Ü
+          else  //åˆ‡æ¢äº§çº¿å¤±è´¥
             begin
               Self.Hide;
-              frm_main.InfoTips('Éú²úÏßÇĞ»»Ê§°Ü£¬ÇëÁªÏµ¹ÜÀíÔ±£¡');
+              frm_main.InfoTips('ç”Ÿäº§çº¿åˆ‡æ¢å¤±è´¥ï¼Œè¯·è”ç³»ç®¡ç†å‘˜ï¼');
             end;
         end;
     end;
@@ -112,7 +112,7 @@ begin
   if ((State = [gdSelected]) or (State=[gdSelected,gdFocused])) then
       begin
         dbg_station.Canvas.Font.Color :=ClYellow;
-        dbg_station.Canvas.Brush.Color :=clblue;  //¹Ø¼ü
+        dbg_station.Canvas.Brush.Color :=clblue;  //å…³é”®
         dbg_station.DefaultDrawColumnCell(Rect,DataCol,Column,State);
    end;
 end;

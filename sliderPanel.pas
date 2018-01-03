@@ -45,7 +45,7 @@ type
 
     property Lines: TStringList read FLines write SetLines;
 
-    //ÎÄ×Ö¹ö¶¯ËÙ¶È¿ØÖÆ£¬µ¥Î»ÊÇºÁÃë
+    //æ–‡å­—æ»šåŠ¨é€Ÿåº¦æ§åˆ¶ï¼Œå•ä½æ˜¯æ¯«ç§’
     property ScrollSpeed: integer read FScrollSpeed write SetScrollSpeed default 10;
     property OnLoop: TNotifyEvent read FOnLoop write FOnLoop;
   end;
@@ -55,7 +55,7 @@ procedure Register;
 implementation
 
 Const
-   constStopMess :String = 'ÒÑ¾­Í£Ö¹¹ö¶¯£¡';
+   constStopMess :String = 'å·²ç»åœæ­¢æ»šåŠ¨ï¼';
 
 procedure Register;
 begin
@@ -82,7 +82,7 @@ begin
       canvas.Brush.Color := self.Color;
       Canvas.FillRect(self.ClientRect);
 
-      canvas.Font.name := 'ËÎÌå';
+      canvas.Font.name := 'å®‹ä½“';
       canvas.Font.Size := self.Font.Size + 16;
       canvas.Font.Style := [fsBold,fsItalic];
       if FCaptionStyle = csHollow then
@@ -101,7 +101,7 @@ begin
       begin
           endpath(canvas.handle);
           Canvas.Pen.Color := clBtnFace;
-          StrokePath(canvas.handle); //½«²¶»ñµÄÂÖÀªÓÃµ±Ç°µÄPen»­µ½CanvasÉÏ
+          StrokePath(canvas.handle); //å°†æ•è·çš„è½®å»“ç”¨å½“å‰çš„Penç”»åˆ°Canvasä¸Š
       end;
 
       canvas.Font := self.Font;
@@ -138,7 +138,7 @@ begin
   begin
      Canvas.Font := self.Font;
      FTopNow := self.Height;
-     TxtHeight := Canvas.textheight('Pg¹ş');
+     TxtHeight := Canvas.textheight('Pgå“ˆ');
      self.TabStop := false;
      Canvas.Brush.Color := self.Color;
 
@@ -286,7 +286,7 @@ end;
    if FDealStrings then exit;
 
    FDealStrings := true;
-   //////´¦Àí»»ĞĞ·û
+   //////å¤„ç†æ¢è¡Œç¬¦
    iLoop:=0;
    while iLoop < self.Lines.Count do
    begin
@@ -327,7 +327,7 @@ end;
        end;
    end;
 
-   /////¼ÆËãÏÔÊ¾Î»ÖÃµÄXÎ»ÒÆ
+   /////è®¡ç®—æ˜¾ç¤ºä½ç½®çš„Xä½ç§»
    iPos :=  self.Lines.Count;
    if iPos>0 then
    begin
