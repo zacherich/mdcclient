@@ -137,7 +137,6 @@
             <Form>frm_container</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="sliderPanel.pas"/>
         <DCCReference Include="frmMESLine.pas">
             <Form>frm_MESLine</Form>
             <FormType>dfm</FormType>

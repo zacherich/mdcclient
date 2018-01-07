@@ -589,6 +589,12 @@ begin
                               FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
                             else if gvHeader_list.ValueFromIndex[i]='Integer' then
                               FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                            if gvApp_testing then
+                              begin
+                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := uvData.Strings[i];
+                              end;
                           end;
                       end
                     else
@@ -601,6 +607,12 @@ begin
                               FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
                             else if gvHeader_list.ValueFromIndex[i]='Integer' then
                               FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                            if gvApp_testing then
+                              begin
+                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := uvData.Strings[i];
+                              end;
                           end;
                       end;
                     Post;
@@ -615,14 +627,13 @@ begin
                               end
                             else  //扫码打卡失败
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败，错误信息：'+vO.S['result.message']);
-                                frm_main.InfoTips('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败：'+vO.S['result.message']+'！');
-                                //Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                                log(DateTimeToStr(now())+', [INFO] 员工号【'+vTest_operator+'】上岗失败，错误信息：'+vO.S['result.message']);
+                                frm_main.InfoTips('员工号【'+vTest_operator+'】上岗失败：'+vO.S['result.message']+'！');
                               end;
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -641,32 +652,35 @@ begin
                     //判断是否是测试机,如果是,则提交测试机数据
                     if gvApp_testing then
                       begin
-                        vTest := SO(lvDataJson);
-                        if vTest.S[gvTest_result_field]=gvTest_pass_value then
+                        if vTest_result_value=gvTest_pass_value then
                           begin
-                            if testingRecord(vTest.S[gvTest_SN_field], TRUE, vTest.S[gvTest_result_field]) then
+                            if testingRecord(vTest_SN_value, TRUE, vTest_result_value) then
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
                               end
                             else
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
                               end;
                           end
                         else
                           begin
-                            if testingRecord(vTest.S[gvTest_SN_field], FALSE, vTest.S[gvTest_result_field]) then
+                            if testingRecord(vTest_SN_value, FALSE, vTest_result_value) then
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
                               end
                             else
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest.S[gvTest_SN_field]+'测试值：'+vTest.S[gvTest_result_field]);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
                               end;
                           end;
+                        log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value+', 目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                      end
+                    else
+                      begin
+                        log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       end;
                     Weld2yield;
-                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                     Operation_check;
                     //EnableControls;
                   except on e:Exception do
@@ -834,14 +848,13 @@ begin
                               end
                             else  //扫码打卡失败
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败，错误信息：'+vO.S['result.message']);
-                                frm_main.InfoTips('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】上岗失败：'+vO.S['result.message']+'！');
-                                //Application.MessageBox(PChar('员工号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫码打卡失败：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+                                log(DateTimeToStr(now())+', [INFO] 员工号【'+vTest_operator+'】上岗失败，错误信息：'+vO.S['result.message']);
+                                frm_main.InfoTips('员工号【'+vTest_operator+'】上岗失败：'+vO.S['result.message']+'！');
                               end;
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -858,7 +871,7 @@ begin
                     end).Start;
                     gvSucceed:=gvSucceed+1;
                     frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
-                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value+'目前总共提交成功'+inttostr(gvSucceed)+'条。');
                     if vTest_result_value=gvTest_pass_value then
                       begin
                         if testingRecord(vTest_SN_value, TRUE, vTest_result_value) then
@@ -1175,7 +1188,7 @@ begin
       if gvline_type='flowing' then    //主线上
         begin
           vO := SO(queryMESLine);
-          if vO.B['result.success'] then  //获取不良模式成功
+          if vO.B['result.success'] then  //获取产线信息成功
             begin
               vA := vO.A['result.records'];
               if vA.Length>0 then
@@ -1190,7 +1203,7 @@ begin
                             begin
                               Append;
                               FieldByName('mesline_id').AsInteger := vResult.I['mesline_id'];
-                              FieldByName('mesline_name').AsString := vResult.S['mesline_name'];
+                              FieldByName ('mesline_name').AsString := vResult.S['mesline_name'];
                               FieldByName('mesline_type').AsString := vResult.S['mesline_type'];
                               FieldByName('stationlist').AsString := vResult.S['stationlist'];
                               Post;
@@ -1252,7 +1265,7 @@ begin
   uvDirSpy.DelimitedText := ChangeRecord2String(ChangeRecord);
   vFileName:=uvDirSpy.Strings[1];
   //vPath:=ChangeFileExt(ExtractFileName(vFileName),'');
-  if (uvDirSpy.Strings[2]=gvMonitor_type) then
+  if POS(uvDirSpy.Strings[2],gvMonitor_type)>0 then
     begin
       Collection_Data(vFileName);
     end;

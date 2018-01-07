@@ -242,26 +242,32 @@ begin
       if frm_main.dbg_workorder.Columns[i].FieldName='input_qty' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '计划数量';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='todo_qty' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '待做数量';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='output_qty' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '产出数量';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='actual_qty' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '实做数量';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='badmode_qty' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '不良数量';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='weld_count' then
         begin
           frm_main.dbg_workorder.Columns[i].Title.Caption := '焊接次数';
+          frm_main.dbg_workorder.Columns[i].Width := 70;
         end;
       if frm_main.dbg_workorder.Columns[i].FieldName='materiallist' then
         begin
@@ -304,22 +310,27 @@ begin
       if frm_main.dbg_materiel.Columns[i].FieldName='consume_unit' then
         begin
           frm_main.dbg_materiel.Columns[i].Title.Caption := '单位消耗';
+          frm_main.dbg_materiel.Columns[i].Width := 70;
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='input_qty' then
         begin
           frm_main.dbg_materiel.Columns[i].Title.Caption := '计划消耗';
+          frm_main.dbg_materiel.Columns[i].Width := 70;
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='consume_qty' then
         begin
           frm_main.dbg_materiel.Columns[i].Title.Caption := '已耗数量';
+          frm_main.dbg_materiel.Columns[i].Width := 70;
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='leave_qty' then
         begin
           frm_main.dbg_materiel.Columns[i].Title.Caption := '待耗数量';
+          frm_main.dbg_materiel.Columns[i].Width := 70;
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='material_qty' then
         begin
           frm_main.dbg_materiel.Columns[i].Title.Caption := '上料数量';
+          frm_main.dbg_materiel.Columns[i].Width := 70;
         end;
       if frm_main.dbg_materiel.Columns[i].FieldName='materiallot_id' then
         begin
