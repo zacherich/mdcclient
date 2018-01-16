@@ -65,6 +65,7 @@ type
     lbl_weld_count: TLabel;
     pnl_tipsbar: TPanel;
     tim_cleartips: TTimer;
+    type uvTipType=(right,error,warn);
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -73,7 +74,7 @@ type
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure spb_startClick(Sender: TObject);
     procedure spb_submitClick(Sender: TObject);
-    procedure InfoTips(fvContent : String; fvColor : TColor = clRed);
+    procedure InfoTips(fvContent : String; fvTipType : uvTipType = error);
     procedure lbl_tag_equipmentDblClick(Sender: TObject);
     procedure dbg_workorderDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
@@ -109,10 +110,31 @@ implementation
 
 uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer, frmMESLine;
 
-procedure Tfrm_main.InfoTips(fvContent : String; fvColor : TColor = clRed);
+procedure Tfrm_main.InfoTips(fvContent : String; fvTipType : uvTipType = error);
 begin
   pnl_tipsbar.Caption := fvContent;
-  pnl_tipsbar.Font.Color := fvColor;
+  case fvTipType of
+  right:
+    begin
+      pnl_tipsbar.Color := clLime;
+      pnl_tipsbar.Font.Color := clBlack;
+      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+    end;
+  error:
+    begin
+      pnl_tipsbar.Color := clRed;
+      pnl_tipsbar.Font.Color := clBlack;
+      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+    end;
+  warn:
+    begin
+      pnl_tipsbar.Color := clInfoBk;
+      pnl_tipsbar.Font.Color := clBlack;
+      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+    end;
+  end;
+
+
   tim_cleartips.Enabled := True;
 end;
 
@@ -354,6 +376,7 @@ begin
           frm_main.lbl_bad_qty.Caption := FloatToStr(gvBadmode_qty);
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
+          gvOutput_manner :=  vO.S['result.output_manner'];
           log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的扫描成功成功！');
         end
       else  //刷新工单失败
@@ -534,9 +557,9 @@ procedure Operation_check;
 begin
   if (gvStaff_code='') or (gvWorkorder_id<=0) then
     begin
-      Inc(uvTip_count);
-      if uvTip_count<4 then
-        begin
+      //Inc(uvTip_count);
+      //if uvTip_count<4 then
+        //begin
           if gvStaff_code='' then
             begin
               frm_main.InfoTips('当前没有操作员，请先扫条码，再操作机台！');
@@ -555,7 +578,7 @@ begin
               //Application.MessageBox(PChar('当前没有工单，请先扫工单条码，再操作机台！'),'错误',MB_ICONERROR);
               Exit;
             end;
-        end;
+        //end;        //取消超过3次提示后不再提示
     end;
 end;
 
@@ -988,7 +1011,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := False;
+  //CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1372,7 +1395,8 @@ begin
     begin
       frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
       frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
-      if gvLastworkcenter then    //如果是最后一道工序必须扫描容器
+      frm_finish.edt_submit.Text := lbl_doing_qty.Caption;
+      if gvLastworkcenter and (gvOutput_manner='container') then    //如果是最后一道工序报工需要扫描容器或者产出标签
         begin
           frm_container.Show;
         end

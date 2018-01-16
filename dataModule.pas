@@ -42,14 +42,14 @@ procedure Tdata_module.cds_badmodeAggregates0Update(Agg: TAggregate);
 begin
   if Not VarIsNull(data_module.cds_badmode.Aggregates.Items[0].Value) then
     begin
-      if data_module.cds_badmode.Aggregates.Items[0].Value>StrToInt(frm_finish.lbl_doing_qty.Caption) then
+      if data_module.cds_badmode.Aggregates.Items[0].Value>StrToInt(frm_finish.edt_submit.Text) then
         begin
           Application.MessageBox(PChar('不合格数量不能超过待报工数量！'),'错误',MB_ICONERROR);
         end
       else
         begin
           frm_finish.lbl_bad_qty.Caption := IntToStr(data_module.cds_badmode.Aggregates.Items[0].Value);
-          frm_finish.lbl_good_qty.Caption := IntToStr(StrToInt(frm_finish.lbl_doing_qty.Caption)-StrToInt(frm_finish.lbl_bad_qty.Caption));
+          frm_finish.lbl_good_qty.Caption := IntToStr(StrToInt(frm_finish.edt_submit.Text)-StrToInt(frm_finish.lbl_bad_qty.Caption));
         end;
     end;
 end;

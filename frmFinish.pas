@@ -19,12 +19,14 @@ type
     lbl_product_code: TLabel;
     sbt_submit: TSpeedButton;
     dbg_badmode: TDBGrid;
-    lbl_tag_container_code: TLabel;
-    lbl_container_code: TLabel;
-    lbl_tag_container_name: TLabel;
-    lbl_container_name: TLabel;
+    lbl_tag_container: TLabel;
+    lbl_container: TLabel;
+    edt_submit: TEdit;
+    lbl_tag_submit: TLabel;
     procedure sbt_submitClick(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure edt_submitChange(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
   public
@@ -92,9 +94,40 @@ begin
   end;
 end;
 
+procedure Tfrm_finish.edt_submitChange(Sender: TObject);
+begin
+  if StrToInt(edt_submit.Text)>StrToInt(lbl_doing_qty.Caption) then
+    begin
+      frm_finish.lbl_good_qty.Caption := '0';
+      Application.MessageBox(PChar('报工数量不能大于待报工数量，请修改！'),'错误',MB_ICONERROR);
+      edt_submit.SetFocus;
+      edt_submit.SelectAll;
+    end
+  else
+    begin
+      frm_finish.lbl_good_qty.Caption := IntToStr(StrToInt(frm_finish.edt_submit.Text)-StrToInt(frm_finish.lbl_bad_qty.Caption));
+    end;
+end;
+
 procedure Tfrm_finish.FormKeyPress(Sender: TObject; var Key: Char);
 begin
 if key=#13 then sbt_submit.Click;
+end;
+
+procedure Tfrm_finish.FormShow(Sender: TObject);
+begin
+  edt_submit.SetFocus;
+  edt_submit.SelectAll;
+  if gvLastworkcenter and (gvOutput_manner='container') then
+    begin
+      lbl_tag_container.Visible := True;
+      lbl_container.Visible := True;
+    end
+  else
+    begin
+      lbl_tag_container.Visible := False;
+      lbl_container.Visible := False;
+    end;
 end;
 
 procedure Tfrm_finish.sbt_submitClick(Sender: TObject);
@@ -116,14 +149,21 @@ begin
     end
   else if gvline_type='station' then    //工作站
     begin
-      vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, gvDoing_qty, vBadmode_lines, gvContainer_id));
+      if gvLastworkcenter and (gvOutput_manner='container') then
+        begin
+          vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, StrToInt(edt_submit.Text), vBadmode_lines, gvContainer_id));
+        end
+      else
+        begin
+          vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, StrToInt(edt_submit.Text), vBadmode_lines));
+        end;
       if vO.B['result.success'] then  //报工成功
         begin
-          frm_main.lbl_doing_qty.Caption:='0';
+          gvDoing_qty:=gvDoing_qty-StrToInt(edt_submit.Text);
+          frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
           ini_set.WriteString('job', 'workorder', '');
-          ini_set.WriteInteger('job', 'doing_qty', 0);
+          ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
           ini_set.UpdateFile;
-          gvDoing_qty:=0;
           RefreshWorkorder;
           RefreshMaterials;
           frm_finish.Hide;
@@ -133,6 +173,7 @@ begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
           Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
         end;
+
     end;
 end;
 

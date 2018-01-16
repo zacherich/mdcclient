@@ -3,7 +3,7 @@ object frm_main: Tfrm_main
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
-  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.2'
+  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.3'
   ClientHeight = 671
   ClientWidth = 523
   Color = clBtnFace
@@ -872,7 +872,7 @@ object frm_main: Tfrm_main
     Enabled = False
     Interval = 2000
     OnTimer = tim_cleartipsTimer
-    Left = 488
+    Left = 464
     Top = 217
   end
 end

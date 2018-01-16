@@ -53,7 +53,7 @@ uses
   function queryBadmode : String;
   function queryMESLine : String;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
-  function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
+  function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer = 0): String;   //工票工单完工
   function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
   function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
@@ -127,6 +127,7 @@ var
   gvProduct_id : Integer;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
+  gvOutput_manner : String;
   gvSequence : Integer;
   gvInput_qty : Currency;
   gvOutput_qty : Currency;
@@ -924,9 +925,12 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_start_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +']');
 end;
 
-function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer): String;   //工票工单完工
+function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer = 0): String;   //工票工单完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
+  if fvContainer_id=0 then
+    Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+']')
+  else
+    Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
 function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工

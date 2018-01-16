@@ -4,8 +4,8 @@ object frm_container: Tfrm_container
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = #25195#25551#23481#22120
-  ClientHeight = 154
-  ClientWidth = 482
+  ClientHeight = 89
+  ClientWidth = 413
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,60 +15,35 @@ object frm_container: Tfrm_container
   FormStyle = fsStayOnTop
   KeyPreview = True
   OldCreateOrder = False
+  Position = poMainFormCenter
   OnKeyPress = FormKeyPress
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
-  object lbl_tag_container_code: TLabel
-    Left = 35
-    Top = 15
-    Width = 64
-    Height = 19
-    Caption = #23481#22120#30721#65306
+  object pnl_tips: TPanel
+    Left = 0
+    Top = 0
+    Width = 413
+    Height = 89
+    Align = alClient
+    Caption = 'pnl_tips'
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
+    Font.Color = clWindowText
+    Font.Height = -27
     Font.Name = 'Tahoma'
-    Font.Style = []
+    Font.Style = [fsBold]
+    ParentBackground = False
     ParentFont = False
+    TabOrder = 0
+    ExplicitLeft = 88
+    ExplicitTop = 8
+    ExplicitWidth = 185
+    ExplicitHeight = 41
   end
-  object lbl_container_code: TLabel
-    Left = 93
-    Top = 15
-    Width = 16
-    Height = 19
-    Caption = #26080
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object lbl_tag_container_name: TLabel
-    Left = 264
-    Top = 15
-    Width = 64
-    Height = 19
-    Caption = #23481#22120#21517#65306
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object lbl_container_name: TLabel
-    Left = 320
-    Top = 15
-    Width = 16
-    Height = 19
-    Caption = #26080
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clPurple
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
+  object tim_cleartips: TTimer
+    Enabled = False
+    OnTimer = tim_cleartipsTimer
+    Left = 376
+    Top = 48
   end
 end
