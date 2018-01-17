@@ -1011,7 +1011,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  //CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1121,10 +1121,15 @@ begin
             end;
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
             begin
-              gvWorkorder_barcode:= uvInput;
-              RefreshWorkorder;
-              RefreshMaterials;   //扫描到工单后刷新材料信息
-              RefreshStaff;
+              if gvDoing_qty>0 then
+                frm_main.InfoTips('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！',warn)
+              else
+                begin
+                  gvWorkorder_barcode:= uvInput;
+                  RefreshWorkorder;
+                  RefreshMaterials;   //扫描到工单后刷新材料信息
+                  RefreshStaff;
+                end;
             end;
           if (copy(uvInput,1,2)='AC') OR (copy(uvInput,1,2)='AT') then  //扫描到的是物料
             begin
@@ -1133,7 +1138,7 @@ begin
                 begin
                   if gvline_type='flowing' then RefreshMaterials(gvConsumelist)
                   else RefreshMaterials;
-                  frm_main.InfoTips('物料标签号【'+uvInput+'】上料成功！');
+                  frm_main.InfoTips('物料标签号【'+uvInput+'】上料成功！',right);
                   //Application.MessageBox(PChar('[INFO] 物料标签号【'+uvInput+'】上料成功！'),'提示信息',MB_ICONINFORMATION);
                   log(DateTimeToStr(now())+', [INFO] 物料标签号【'+uvInput+'】上料成功，返回【'+vO.AsObject.S['result']);
                 end
