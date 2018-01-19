@@ -11,8 +11,7 @@ uses
 type
   Tfrm_main = class(TForm)
     pnl_top: TPanel;
-    pnl_middle: TPanel;
-    PageControl1: TPageControl;
+    pgc_under: TPageControl;
     tbs_collection: TTabSheet;
     tbs_log: TTabSheet;
     lbx_log: TListBox;
@@ -24,6 +23,34 @@ type
     lbl_fail_qty: TLabel;
     lbl_equipment_state: TLabel;
     shp_equipment_state: TShape;
+    tbs_workorder: TTabSheet;
+    gpl_operator: TGridPanel;
+    lbl_tag_operator: TLabel;
+    lbl_operator: TLabel;
+    gpl_equipment: TGridPanel;
+    lbl_tag_equipment: TLabel;
+    lbl_equipment: TLabel;
+    lbl_tag_line: TLabel;
+    lbl_line: TLabel;
+    lbl_tag_station: TLabel;
+    lbl_station: TLabel;
+    pnl_workorder: TPanel;
+    Splitter1: TSplitter;
+    pnl_materiel: TPanel;
+    lbl_tag_materiel: TLabel;
+    dbg_workorder: TDBGrid;
+    dbg_materiel: TDBGrid;
+    tim_cleartips: TTimer;
+    pnl_workorder_title: TPanel;
+    lbl_tag_workorder: TLabel;
+    lbl_wo_rows: TLabel;
+    lbl_tag_wo_rows: TLabel;
+    lbl_wo_row: TLabel;
+    lbl_tag_wo_row: TLabel;
+    pgc_top: TPageControl;
+    tbs_wo: TTabSheet;
+    tbs_tip: TTabSheet;
+    pnl_middle: TPanel;
     lbl_tag_product_code: TLabel;
     lbl_tag_todo_qty: TLabel;
     lbl_tag_done_qty: TLabel;
@@ -37,25 +64,7 @@ type
     lbl_good_qty: TLabel;
     lbl_bad_qty: TLabel;
     lbl_doing_qty: TLabel;
-    tbs_workorder: TTabSheet;
-    gpl_operator: TGridPanel;
-    lbl_tag_operator: TLabel;
-    lbl_operator: TLabel;
-    gpl_equipment: TGridPanel;
-    lbl_tag_equipment: TLabel;
-    lbl_equipment: TLabel;
-    lbl_tag_line: TLabel;
-    lbl_line: TLabel;
-    lbl_tag_station: TLabel;
-    lbl_station: TLabel;
     lbl_tag_title: TLabel;
-    pnl_workorder: TPanel;
-    lbl_tag_workorder: TLabel;
-    Splitter1: TSplitter;
-    pnl_materiel: TPanel;
-    lbl_tag_materiel: TLabel;
-    dbg_workorder: TDBGrid;
-    dbg_materiel: TDBGrid;
     spb_submit: TSpeedButton;
     spb_refresh: TSpeedButton;
     lbl_tag_state: TLabel;
@@ -64,7 +73,17 @@ type
     lbl_tag_weld_count: TLabel;
     lbl_weld_count: TLabel;
     pnl_tipsbar: TPanel;
-    tim_cleartips: TTimer;
+    spb_random: TSpeedButton;
+    spb_first: TSpeedButton;
+    spb_last: TSpeedButton;
+    spb_debug: TSpeedButton;
+    spb_replace: TSpeedButton;
+    rdg_unproductive: TRadioGroup;
+    procedure spb_firstClick(Sender: TObject);
+    procedure spb_randomClick(Sender: TObject);
+    procedure spb_lastClick(Sender: TObject);
+    procedure spb_debugClick(Sender: TObject);
+    procedure spb_replaceClick(Sender: TObject);
     type uvTipType=(right,error,warn);
 
     procedure FormCreate(Sender: TObject);
@@ -113,28 +132,27 @@ uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmC
 procedure Tfrm_main.InfoTips(fvContent : String; fvTipType : uvTipType = error);
 begin
   pnl_tipsbar.Caption := fvContent;
+  tbs_tip.Show;
   case fvTipType of
   right:
     begin
-      pnl_tipsbar.Color := clLime;
+      Self.Color := clLime;
       pnl_tipsbar.Font.Color := clBlack;
       pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
     end;
   error:
     begin
-      pnl_tipsbar.Color := clRed;
-      pnl_tipsbar.Font.Color := clBlack;
+      Self.Color := clRed;
+      pnl_tipsbar.Font.Color := clWhite;
       pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
     end;
   warn:
     begin
-      pnl_tipsbar.Color := clInfoBk;
+      Self.Color := clInfoBk;
       pnl_tipsbar.Font.Color := clBlack;
       pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
     end;
   end;
-
-
   tim_cleartips.Enabled := True;
 end;
 
@@ -152,8 +170,10 @@ begin
           frm_main.lbl_equipment_state.Caption := gvApp_state;
           if gvApp_state='normal' then
             begin
-              frm_main.lbl_equipment_state.Font.Color := clMoneyGreen;
-              frm_main.shp_equipment_state.Brush.Color := clMoneyGreen;
+              frm_main.lbl_equipment_state.Font.Color := clGreen;
+              frm_main.shp_equipment_state.Brush.Color := clGreen;
+              frm_main.lbl_tag_equipment.Font.Color := clGreen;
+              frm_main.lbl_equipment.Font.Color := clGreen;
             end;
           if gvApp_state='repair' then
             begin
@@ -333,6 +353,7 @@ begin
                           Next;
                         end;
                     end;
+                  frm_main.lbl_wo_rows.Caption := ' ' + IntToStr(vVirtuallist.Length) + ' 行';
                 end
               else
                 begin
@@ -541,14 +562,65 @@ begin
     end
   else
     begin
-      gvDoing_qty:=gvDoing_qty+1;
-      frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
-      if gvline_type='station' then
+      case frm_main.rdg_unproductive.ItemIndex of
+      -1:    //正常生产的产量算作正常生产
         begin
-          ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
-          ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
-          ini_set.UpdateFile;
+          gvDoing_qty:=gvDoing_qty+1;
+          frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
+          if gvline_type='station' then
+            begin
+              ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
+              ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
+              ini_set.UpdateFile;
+            end;
         end;
+      0:     //调机的产量算作正常生产
+        begin
+          gvDoing_qty:=gvDoing_qty+1;
+          frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
+          if gvline_type='station' then
+            begin
+              ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
+              ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
+              ini_set.UpdateFile;
+            end;
+          frm_main.spb_debug.Down := False;
+          frm_main.rdg_unproductive.ItemIndex := -1;
+          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+        end;
+      1:     //换型的产量算作正常生产
+        begin
+          gvDoing_qty:=gvDoing_qty+1;
+          frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
+          if gvline_type='station' then
+            begin
+              ini_set.WriteString('job', 'workorder', gvWorkorder_barcode);
+              ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
+              ini_set.UpdateFile;
+            end;
+          frm_main.spb_replace.Down := False;
+          frm_main.rdg_unproductive.ItemIndex := -1;
+          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+        end;
+      2:     //首件的产量算作报废
+        begin
+          frm_main.spb_first.Down := False;
+          frm_main.rdg_unproductive.ItemIndex := -1;
+          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+        end;
+      3:     //抽检的产量算作报废
+        begin
+          frm_main.spb_random.Down := False;
+          frm_main.rdg_unproductive.ItemIndex := -1;
+          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+        end;
+      4:     //末件的产量算作报废
+        begin
+          frm_main.spb_last.Down := False;
+          frm_main.rdg_unproductive.ItemIndex := -1;
+          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+        end;
+      end;
       uvWeld_count := 0;
     end;
 end;
@@ -585,7 +657,7 @@ end;
 procedure Collection_Data(const fvFileName : String);
 var
   vFile : TFileStream;
-  vO, vTest: ISuperObject;
+  vO : ISuperObject;
   lvDataJson, lvMdcJson, vTest_field, vTest_value,
   vTest_operator, vTest_SN_value, vTest_result_value : String;
   i, vP : integer;
@@ -705,7 +777,7 @@ begin
                       end;
                     Weld2yield;
                     Operation_check;
-                    //EnableControls;
+
                   except on e:Exception do
                     begin
                       Delete;
@@ -991,11 +1063,14 @@ begin
           if gvWorkorder_rowno <> dbg_workorder.DataSource.DataSet.RecNo then
             begin
               frm_main.InfoTips('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！');
-              //Application.MessageBox(PChar('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！'),'错误',MB_ICONERROR);
               Exit;
             end;
         end;
     end;
+  if gvWorkorder_rowno>0 then
+    frm_main.lbl_wo_row.Caption := ' ' + IntToStr(gvWorkorder_rowno) + ' '
+  else
+    frm_main.lbl_wo_row.Caption := ' 0 ';
 end;
 
 procedure Tfrm_main.dbg_workorderDrawColumnCell(Sender: TObject;
@@ -1011,7 +1086,7 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := False;
+  //CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
@@ -1121,14 +1196,31 @@ begin
             end;
           if copy(uvInput,1,2)='AQ' then  //扫描到的是工单
             begin
-              if gvDoing_qty>0 then
-                frm_main.InfoTips('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！',warn)
+              if gvline_type='station' then    //工作站
+                begin
+                  if gvDoing_qty>0 then
+                    begin
+                      if gvProduct_code = '' then
+                        begin
+                          gvWorkorder_barcode:= uvInput;
+                          RefreshWorkorder;
+                          RefreshMaterials;   //扫描到工单后刷新材料信息
+                          RefreshStaff;
+                        end
+                      else
+                        frm_main.InfoTips('有待报工数量为:'+IntToStr(gvDoing_qty)+'，请先报工再切换工单！',warn);
+                    end
+                  else
+                    begin
+                      gvWorkorder_barcode:= uvInput;
+                      RefreshWorkorder;
+                      RefreshMaterials;   //扫描到工单后刷新材料信息
+                      RefreshStaff;
+                    end;
+                end
               else
                 begin
-                  gvWorkorder_barcode:= uvInput;
-                  RefreshWorkorder;
-                  RefreshMaterials;   //扫描到工单后刷新材料信息
-                  RefreshStaff;
+                  frm_main.InfoTips('此工位不接受【'+copy(uvInput,3,Length(uvInput)-2)+'】工单！',warn);
                 end;
             end;
           if (copy(uvInput,1,2)='AC') OR (copy(uvInput,1,2)='AT') then  //扫描到的是物料
@@ -1179,6 +1271,7 @@ begin
   RefreshWorkorder;
   RefreshMaterials;
   RefreshStaff;
+  tbs_wo.Show;
   if gvDoing_qty>0 then
     begin
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
@@ -1187,7 +1280,7 @@ begin
   //测试机不显示料单页签和报工按钮
   tbs_workorder.TabVisible:=Not gvApp_testing;
   spb_submit.Visible:=Not gvApp_testing;
-  if gvApp_testing then lbl_tag_doing_qty.Caption:='已测试' else lbl_tag_doing_qty.Caption:='待报工';
+  if gvApp_testing then lbl_tag_doing_qty.Caption:='已测' else lbl_tag_doing_qty.Caption:='待报：';
   if DirectoryExists(gvData_path) then
      begin
         with OxygenDirectorySpy1 do begin
@@ -1298,6 +1391,31 @@ begin
       Collection_Data(vFileName);
     end;
 end;
+
+procedure Tfrm_main.spb_debugClick(Sender: TObject);
+begin
+  if spb_debug.Down then rdg_unproductive.ItemIndex := 0 else rdg_unproductive.ItemIndex := -1;
+end;
+
+procedure Tfrm_main.spb_replaceClick(Sender: TObject);
+begin
+  if spb_replace.Down then rdg_unproductive.ItemIndex := 1 else rdg_unproductive.ItemIndex := -1;
+end;
+procedure Tfrm_main.spb_firstClick(Sender: TObject);
+begin
+  if spb_first.Down then rdg_unproductive.ItemIndex := 2 else rdg_unproductive.ItemIndex := -1;
+end;
+
+procedure Tfrm_main.spb_randomClick(Sender: TObject);
+begin
+  if spb_random.Down then rdg_unproductive.ItemIndex := 3 else rdg_unproductive.ItemIndex := -1;
+end;
+
+procedure Tfrm_main.spb_lastClick(Sender: TObject);
+begin
+  if spb_last.Down then rdg_unproductive.ItemIndex := 4 else rdg_unproductive.ItemIndex := -1;
+end;
+
 
 procedure Tfrm_main.spb_refreshClick(Sender: TObject);
 begin
@@ -1411,10 +1529,13 @@ begin
         end;
     end;
 end;
+
 procedure Tfrm_main.tim_cleartipsTimer(Sender: TObject);
 begin
+
   pnl_tipsbar.Caption := '';
-  pnl_tipsbar.Color := clBtnFace;
+  Self.Color := clBtnFace;
+  tbs_wo.Show;
   tim_cleartips.Enabled := False;
 end;
 
