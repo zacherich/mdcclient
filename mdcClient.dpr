@@ -9,9 +9,11 @@ uses
   frmLogin in 'frmLogin.pas' {frm_login},
   frmFinish in 'frmFinish.pas' {frm_finish},
   frmContainer in 'frmContainer.pas' {frm_container},
+  frmReplaceWO in 'frmReplaceWO.pas' {frm_ReplaceWO},
   frmMESLine in 'frmMESLine.pas' {frm_MESLine};
 
 {$R *.res}
+
 
 begin
   Application.MainFormOnTaskbar := True;
@@ -22,6 +24,7 @@ begin
   Application.CreateForm(Tfrm_finish, frm_finish);
   Application.CreateForm(Tdata_module, data_module);
   Application.CreateForm(Tfrm_container, frm_container);
+  Application.CreateForm(Tfrm_ReplaceWO, frm_ReplaceWO);
   Application.CreateForm(Tfrm_MESLine, frm_MESLine);
   if frmLogin.Login() then  //呼叫登录窗口：就这一行，简单吧！
     Application.Run;

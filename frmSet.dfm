@@ -25,12 +25,12 @@ object frm_set: Tfrm_set
     TabOrder = 0
     Text = 'ButtonedEdit1'
   end
-  object PageControl1: TPageControl
+  object pgc_set: TPageControl
     Left = 0
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = TabSheet2
+    ActivePage = tbs_collection
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -39,8 +39,8 @@ object frm_set: Tfrm_set
     Font.Style = []
     ParentFont = False
     TabOrder = 1
-    object TabSheet1: TTabSheet
-      Caption = #22522#26412#35774#32622
+    object tbs_equipment: TTabSheet
+      Caption = #35774#22791#35774#32622
       object Image1: TImage
         Left = 16
         Top = 32
@@ -384,7 +384,7 @@ object frm_set: Tfrm_set
         end
       end
     end
-    object TabSheet2: TTabSheet
+    object tbs_collection: TTabSheet
       Caption = #25968#25454#37319#38598
       ImageIndex = 1
       object lbl_tag_data_path: TLabel
@@ -457,8 +457,8 @@ object frm_set: Tfrm_set
           Caption = #20998#38548#31526#65306
         end
         object spb_load_file: TSpeedButton
-          Left = 596
-          Top = 378
+          Left = 597
+          Top = 410
           Width = 89
           Height = 32
           Caption = #21152'  '#36733
@@ -568,7 +568,7 @@ object frm_set: Tfrm_set
           MinValue = 1
           ParentFont = False
           TabOrder = 1
-          Value = 0
+          Value = 1
           OnChange = spn_header_lineChange
         end
         object cmb_datatype: TComboBox
@@ -653,7 +653,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 6
-          Value = 1
+          Value = 0
           OnChange = spn_end_lineChange
         end
         object spn_begin_line: TSpinEdit
@@ -664,7 +664,7 @@ object frm_set: Tfrm_set
           MaxValue = 0
           MinValue = 1
           TabOrder = 7
-          Value = 1
+          Value = 0
           OnChange = spn_begin_lineChange
         end
         object edt_queue_name: TEdit
@@ -697,6 +697,17 @@ object frm_set: Tfrm_set
         Height = 17
         Caption = #21253#25324#23376#30446#24405
         TabOrder = 1
+      end
+    end
+    object tbs_base: TTabSheet
+      Caption = #22522#26412#35774#32622
+      ImageIndex = 2
+      object dlc_printer: TDBLookupComboBox
+        Left = 64
+        Top = 27
+        Width = 193
+        Height = 27
+        TabOrder = 0
       end
     end
   end

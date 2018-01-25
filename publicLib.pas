@@ -11,7 +11,9 @@ uses
   procedure MaterialsInfoCDS;
   procedure BadmodeCDS;
   procedure MESLineCDS;
+  procedure ReplaceWOCDS;
   procedure StationCDS;
+  procedure PrinterCDS;
   Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
   function GetFileType(FileName:String):string;
   function GetLastLine(fName : String) : String;
@@ -46,20 +48,21 @@ uses
   function queryRedis(CONST fvQueue_name: String): Bool;   //查询redis信息
   function scanWorkticket(CONST fvBarcode: String): String;   //扫描工票工单
   function scanContainer(CONST fvBarcode: String): String;   //扫描容器
-  function getLineWorkorder : String;  //查询主线工单
+  function getLineWorkorder(CONST fvWorkorder_id: Integer = 0) : String;  //查询主线工单
   function feedMaterial(CONST fvBarcode: String): String;   //设备上料
   function getFeedMaterials : String;     //查询设备上料信息
   function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;  //查询工单上工位的消耗信息
   function queryBadmode : String;
   function queryMESLine : String;
+  function queryPrinter : Bool;
   function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer = 0): String;   //工票工单完工
-  function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
+  function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency; CONST fvBadmode_lines: String = '[]'): String;   //子工单虚拟建完工
   function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
-  gvApp_id : Integer;
+  gvApp_id : Integer = 0;
   gvApp_code : String;
   gvApp_name : String;
   gvApp_testing : Bool;
@@ -71,15 +74,15 @@ var
   gvApp_state : String;
   gvApp_secret : Integer;
   gvData_type : String;
-  gvMESLine_id : Integer;
+  gvMESLine_id : Integer = 0;
   gvMESLine_name : String;
   gvline_type : String;
   gvWorkday_start : String;
-  gvSchedule_id : Integer;
-  gvWorkstation_id : Integer;
+  gvSchedule_id : Integer = 0;
+  gvWorkstation_id : Integer = 0;
   gvWorkstation_code : String;
   gvWorkstation_name : String;
-  gvStaff_id : Integer;
+  gvStaff_id : Integer = 0;
   gvStaff_code : String;
   gvStaff_name : String;
   ////mdc内层接口JSON
@@ -89,6 +92,7 @@ var
   gvHeader_row : integer;
   gvBegin_row : integer;
   gvEnd_row : integer;
+  gvDelay : integer = 100;
   gvDelimiter : String;
   gvdeli : Char;
   gvHeader_lines : String;
@@ -107,24 +111,28 @@ var
   gvServer_Port : Integer;
   gvDatabase : String;
   gvSave_PWD : Bool;
-  gvUserID : Integer;
+  gvUserID : Integer = 0;
   gvUserName : String;
   gvPassword : String;
+  gvPrinter_id : Integer = 0;
+  gvPrinter_name : String;
+
   //在制工单
-  gvMainorder_id : Integer;
+  gvMainorder_id : Integer = 0;
   gvMainorder_name : String;
   gvWorkorder_barcode : String;
-  gvWorkorder_id : Integer;
+  gvWorkorder_id : Integer = 0;
   gvWorkorder_name : String;
-  gvWorkticket_id : Integer;
+  gvNon_default_wo_id : Integer = 0;
+  gvWorkticket_id : Integer = 0;
   gvWorkticket_name : String;
-  gvWorkcenter_id : Integer;
+  gvWorkcenter_id : Integer = 0;
   gvWorkcenter_name : String;
   gvWorkticket_state : String;
-  gvContainer_id : Integer;
+  gvContainer_id : Integer = 0;
   gvContainer_code : String;
   gvContainer_name : String;
-  gvProduct_id : Integer;
+  gvProduct_id : Integer = 0;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
   gvOutput_manner : String;
@@ -132,18 +140,18 @@ var
   gvInput_qty : Currency;
   gvOutput_qty : Currency;
   gvBadmode_qty : Currency;
-  gvWeld_count : Integer;
-  gvDoing_qty : Integer;
+  gvWeld_count : Integer = 0;
+  gvDoing_qty : Integer = 0;
   gvConsumelist : String;
   //统计变量
-  gvWorkorder_rowno : Integer;
-  gvSucceed : Integer;
-  gvFail : Integer;
+  gvWorkorder_rowno : Integer = 0;
+  gvSucceed : Integer = 0;
+  gvFail : Integer = 0;
 
 implementation
 
 uses
-  dataModule, frmMain, frmFinish, frmMESLine;
+  dataModule, frmMain, frmSet, frmFinish, frmMESLine, frmReplaceWO;
 
 function EncodeUniCode(Str:WideString):string; //字符串－>PDU
 var
@@ -186,7 +194,7 @@ begin
         for i := 0 to gvHeader_list.Count-1 do
           begin
             if gvHeader_list.ValueFromIndex[i]='String' then
-              FieldDefs.Add(gvHeader_list.Names[i], ftString, 100,False)
+              FieldDefs.Add(gvHeader_list.Names[i], ftWideString, 100,False)
             else if gvHeader_list.ValueFromIndex[i]='Float' then
               FieldDefs.Add(gvHeader_list.Names[i], ftFloat, 0, False)
             else if gvHeader_list.ValueFromIndex[i]='Integer' then
@@ -218,14 +226,14 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('product_id', ftInteger, 0, True);  //产品编号
-      FieldDefs.Add('product_code', ftString, 30, True);  //产品编号
+      FieldDefs.Add('product_code', ftWideString, 30, True);  //产品编号
       FieldDefs.Add('input_qty', ftFloat, 0, False);    //计划数量
       FieldDefs.Add('todo_qty', ftFloat, 0, False);   //待做数量
       FieldDefs.Add('output_qty', ftFloat, 0, False);  //产出数量
       FieldDefs.Add('actual_qty', ftFloat, 0,False);  //实做数量
       FieldDefs.Add('badmode_qty', ftFloat, 0, False);   //不良数量
       FieldDefs.Add('weld_count', ftInteger, 0, False);  //焊接次数
-      FieldDefs.Add('materiallist', ftString, 1000, False);  //原料列表
+      FieldDefs.Add('materiallist', ftWideString, 1000, False);  //原料列表
       IndexDefs.Add('idx_product_id', 'product_id', [IxPrimary]);
       CreateDataSet;
       Open;
@@ -286,14 +294,14 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('material_id', ftInteger, 0, True);  //原料编号
-      FieldDefs.Add('material_code', ftString, 25, True);  //原料编号
+      FieldDefs.Add('material_code', ftWideString, 25, True);  //原料编号
       FieldDefs.Add('input_qty', ftFloat, 0, False);    //计划消耗数量
       FieldDefs.Add('consume_qty', ftFloat, 0, False);  //消耗数量
       FieldDefs.Add('material_qty', ftFloat, 0, False);   //工位数量
       FieldDefs.Add('consume_unit', ftFloat, 0,False);  //单位消耗数量
       FieldDefs.Add('leave_qty', ftFloat, 0, False);   //剩余数量
       FieldDefs.Add('materiallot_id', ftInteger, 0, False);  //工位原料批号ID
-      FieldDefs.Add('materiallot_name', ftString, 20, False);  //工位原料批号
+      FieldDefs.Add('materiallot_name', ftWideString, 20, False);  //工位原料批号
       IndexDefs.Add('idx_material_id', 'material_id', [IxPrimary]);
       CreateDataSet;
       Open;
@@ -345,6 +353,47 @@ begin
     end;
 end;
 
+procedure ReplaceWOCDS;
+var i: Integer;
+begin
+  with data_module.cds_replacewo do
+    begin
+      FieldDefs.Clear;
+      Close;
+      FieldDefs.Add('order_id', ftInteger, 0, True);  //产品编号
+      FieldDefs.Add('order_name', ftWideString, 30, False);  //原料列表
+      FieldDefs.Add('product_code', ftWideString, 30, True);  //产品编号
+      FieldDefs.Add('input_qty', ftFloat, 0, False);    //计划数量
+      IndexDefs.Add('idx_order_id', 'order_id', [IxPrimary]);
+      CreateDataSet;
+      Open;
+    end;
+  frm_ReplaceWO.dbg_replacewo.DataSource := data_module.dsc_replacewo;
+  for i:=0 to frm_ReplaceWO.dbg_replacewo.Columns.Count-1 do
+    begin
+      if frm_ReplaceWO.dbg_replacewo.Columns[i].FieldName='order_id' then
+        begin
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Visible := False;
+        end;
+      if frm_ReplaceWO.dbg_replacewo.Columns[i].FieldName='order_name' then
+        begin
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Title.Caption := '工单编号';
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Width := 150;
+        end;
+      if frm_ReplaceWO.dbg_replacewo.Columns[i].FieldName='product_code' then
+        begin
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Title.Caption := '产品编码';
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Width := 200;
+        end;
+      if frm_ReplaceWO.dbg_replacewo.Columns[i].FieldName='input_qty' then
+        begin
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Title.Caption := '计划数量';
+          frm_ReplaceWO.dbg_replacewo.Columns[i].Width := 70;
+        end;
+      frm_ReplaceWO.dbg_replacewo.Columns[i].Title.Alignment := taCenter;
+    end;
+end;
+
 procedure BadmodeCDS;
 var i: Integer;
 begin
@@ -353,7 +402,7 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('badmode_id', ftInteger, 0, True);
-      FieldDefs.Add('badmode_name', ftString, 30,False);
+      FieldDefs.Add('badmode_name', ftWideString, 30,False);
       FieldDefs.Add('badmode_qty', ftInteger, 0, True);
       IndexDefs.Add('idx_badmode_name', 'badmode_name', []);
       AggregatesActive:=False;
@@ -394,9 +443,10 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('mesline_id', ftInteger, 0, True);
-      FieldDefs.Add('mesline_name', ftString, 30,False);
-      FieldDefs.Add('mesline_type', ftString, 30,False);
-      FieldDefs.Add('stationlist', ftString, 1000, True);
+      FieldDefs.Add('mesline_name', ftWideString, 30,False);
+      FieldDefs.Add('mesline_type', ftWideString, 30,False);
+      FieldDefs.Add('stationlist', ftWideString, 1000, True);
+      IndexDefs.Add('idx_mesline_id', 'mesline_id', [IxPrimary]);
       IndexDefs.Add('idx_mesline_name', 'mesline_name', []);
       CreateDataSet;
       Open;
@@ -404,6 +454,24 @@ begin
     frm_MESLine.dlc_mesline.ListSource := data_module.dsc_mesline;
     frm_MESLine.dlc_mesline.KeyField := 'mesline_id';
     frm_MESLine.dlc_mesline.ListField := 'mesline_name';
+end;
+
+procedure PrinterCDS;
+begin
+  with data_module.cds_printer do
+    begin
+      FieldDefs.Clear;
+      Close;
+      FieldDefs.Add('printer_id', ftInteger, 0, True);
+      FieldDefs.Add('printer_name', ftWideString, 30,False);
+      IndexDefs.Add('idx_printer_id', 'printer_id', [IxPrimary]);
+      IndexDefs.Add('idx_printer_name', 'printer_name', []);
+      CreateDataSet;
+      Open;
+    end;
+    frm_set.dlc_printer.ListSource := data_module.dsc_printer;
+    frm_set.dlc_printer.KeyField := 'printer_id';
+    frm_set.dlc_printer.ListField := 'printer_name';
 end;
 
 procedure StationCDS;
@@ -414,8 +482,9 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('workstation_id', ftInteger, 0, True);
-      FieldDefs.Add('workstation_code', ftString, 30, True);
-      FieldDefs.Add('workstation_name', ftString, 50, True);
+      FieldDefs.Add('workstation_code', ftWideString, 30, True);
+      FieldDefs.Add('workstation_name', ftWideString, 50, True);
+      IndexDefs.Add('idx_workstation_id', 'workstation_id', [IxPrimary]);
       IndexDefs.Add('idx_workstation_name', 'workstation_name', []);
       CreateDataSet;
       Open;
@@ -564,7 +633,7 @@ begin
             for i := 0 to FieldDefs.Count -1 do
             begin
               case Fields[i].DataType of
-                ftString : keyValue:= keyValue + Format('"%s":"%s",',[Fields[i].FieldName, StringReplace(Fields[i].AsString, #9, ' ', [rfReplaceAll])]);
+                ftWideString : keyValue:= keyValue + Format('"%s":"%s",',[Fields[i].FieldName, StringReplace(Fields[i].AsString, #9, ' ', [rfReplaceAll])]);
                 ftFloat : keyValue:= keyValue + Format('"%s":%s,',[Fields[i].FieldName, StringReplace(Fields[i].AsString, #9, ' ', [rfReplaceAll])]);
                 ftInteger : keyValue:= keyValue + Format('"%s":%s,',[Fields[i].FieldName, StringReplace(Fields[i].AsString, #9, ' ', [rfReplaceAll])]);
                 ftBoolean : keyValue:= keyValue + Format('"%s":%s,',[Fields[i].FieldName, StringReplace(Fields[i].AsString, #9, ' ', [rfReplaceAll])]);
@@ -772,6 +841,8 @@ begin
   vA := vO['result.employeelist'].AsArray;
   if vA.Length<=0 then
     begin
+      gvStaff_code:= '';
+      gvStaff_name:= '';
       Result := False;
     end
   else
@@ -889,9 +960,12 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_container_scanning", "'+ fvBarcode +'"]');
 end;
 
-function getLineWorkorder : String;
+function getLineWorkorder(CONST fvWorkorder_id: Integer = 0) : String;
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_virtual_materiallist", "'+ gvApp_code +'"]');
+  if fvWorkorder_id=0 then
+    Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_virtual_materiallist", "'+ gvApp_code +'"]')
+  else
+    Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_virtual_materiallist", "'+ gvApp_code +'", ' + IntToStr(fvWorkorder_id) + ']');
 end;
 
 function feedMaterial(CONST fvBarcode: String): String;
@@ -920,6 +994,48 @@ begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_loading_workstationlist"]');
 end;
 
+function queryPrinter : Bool;
+var
+  vO, vResult: ISuperObject;
+  vA: TSuperArray;
+  i: Integer;
+begin
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_printer_list"]'));
+  if vO.B['result.success'] then  //获取标签打印机信息成功
+    begin
+      vA := vO.A['result.printers'];
+      if vA.Length>0 then
+        begin
+          with data_module.cds_printer do
+            begin
+              EmptyDataSet;
+              for i := 0 to vA.Length-1 do
+                begin
+                  vResult := SO(vA[i].AsString);
+                  Append;
+                  FieldByName('printer_id').AsInteger := vResult.I['printer_id'];
+                  FieldByName ('printer_name').AsString := vResult.S['printer_name'];
+                  Post;
+                end;
+              frm_set.dlc_printer.KeyValue := gvPrinter_id;
+            end;
+          Result := TRUE;
+        end
+      else
+        begin
+          Result := FALSE;
+        end;
+    end
+  else
+    begin
+      with data_module.cds_printer do
+        begin
+          EmptyDataSet;
+        end;
+      Result := FALSE;
+    end;
+end;
+
 function workticket_START(CONST fvWorkticket_id, fvApp_id: Integer): String;   //工票工单开工
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_start_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +']');
@@ -933,9 +1049,9 @@ begin
     Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_workticket_finish_onstationclient", '+ IntToStr(fvWorkticket_id) +', '+ IntToStr(fvApp_id) +', '+ FloatToStr(fvCommit_qty) +', '+fvBadmode_lines+', '+IntToStr(fvContainer_id)+']');
 end;
 
-function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency): String;   //子工单虚拟建完工
+function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency; CONST fvBadmode_lines: String = '[]'): String;   //子工单虚拟建完工
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_vtproduct_output", '+ IntToStr(gvWorkstation_id) +', '+ IntToStr(gvWorkorder_id) +', '+IntToStr(fvProduct_id)+', '+ FloatToStr(fvOutput_qty) +']');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_vtproduct_output", ' + IntToStr(gvWorkstation_id) + ', ' + IntToStr(gvWorkorder_id) + ', ' +IntToStr(fvProduct_id)+ ', '+ FloatToStr(fvOutput_qty) + ',' + fvBadmode_lines +']');
 end;
 
 function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据

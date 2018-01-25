@@ -90,4 +90,28 @@ object data_module: Tdata_module
     Left = 168
     Top = 152
   end
+  object dsc_replacewo: TDataSource
+    DataSet = cds_replacewo
+    Left = 240
+    Top = 216
+  end
+  object cds_replacewo: TClientDataSet
+    Aggregates = <>
+    AggregatesActive = True
+    Params = <>
+    Left = 240
+    Top = 152
+  end
+  object cds_printer: TClientDataSet
+    Aggregates = <>
+    AggregatesActive = True
+    Params = <>
+    Left = 320
+    Top = 152
+  end
+  object dsc_printer: TDataSource
+    DataSet = cds_printer
+    Left = 320
+    Top = 216
+  end
 end

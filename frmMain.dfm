@@ -3,7 +3,7 @@ object frm_main: Tfrm_main
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
-  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.3'
+  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.4'
   ClientHeight = 671
   ClientWidth = 523
   Color = clBtnFace
@@ -305,8 +305,6 @@ object frm_main: Tfrm_main
     object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
-      ExplicitTop = 29
-      ExplicitHeight = 397
       object Splitter1: TSplitter
         Left = 0
         Top = 235
@@ -372,7 +370,6 @@ object frm_main: Tfrm_main
             Height = 17
             Align = alRight
             Caption = ' 0 '#34892
-            ExplicitLeft = 479
             ExplicitHeight = 19
           end
           object lbl_tag_wo_rows: TLabel
@@ -382,7 +379,6 @@ object frm_main: Tfrm_main
             Height = 17
             Align = alRight
             Caption = #20849
-            ExplicitLeft = 462
             ExplicitHeight = 19
           end
           object lbl_wo_row: TLabel
@@ -392,7 +388,6 @@ object frm_main: Tfrm_main
             Height = 17
             Align = alRight
             Caption = ' 0 '
-            ExplicitLeft = 443
             ExplicitHeight = 19
           end
           object lbl_tag_wo_row: TLabel
@@ -402,7 +397,6 @@ object frm_main: Tfrm_main
             Height = 17
             Align = alRight
             Caption = #31532
-            ExplicitLeft = 427
             ExplicitHeight = 19
           end
         end
@@ -414,7 +408,6 @@ object frm_main: Tfrm_main
         Height = 158
         Align = alClient
         TabOrder = 1
-        ExplicitHeight = 159
         object lbl_tag_materiel: TLabel
           Left = 1
           Top = 1
@@ -446,8 +439,6 @@ object frm_main: Tfrm_main
     end
     object tbs_collection: TTabSheet
       Caption = #37319#38598#25968#25454
-      ExplicitTop = 29
-      ExplicitHeight = 397
       object dbg_collection: TDBGrid
         Left = 0
         Top = 25
@@ -537,8 +528,6 @@ object frm_main: Tfrm_main
     object tbs_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
-      ExplicitTop = 29
-      ExplicitHeight = 397
       object lbx_log: TListBox
         Left = 0
         Top = 0
@@ -548,7 +537,6 @@ object frm_main: Tfrm_main
         Align = alClient
         ItemHeight = 18
         TabOrder = 0
-        ExplicitHeight = 397
       end
     end
   end
@@ -582,13 +570,7 @@ object frm_main: Tfrm_main
         Align = alClient
         BevelOuter = bvNone
         Ctl3D = True
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -15
-        Font.Name = 'Tahoma'
-        Font.Style = []
         ParentCtl3D = False
-        ParentFont = False
         TabOrder = 0
         object lbl_tag_product_code: TLabel
           Left = 11
@@ -609,12 +591,6 @@ object frm_main: Tfrm_main
           Width = 63
           Height = 19
           Caption = #24212'   '#20570#65306
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_tag_done_qty: TLabel
           Left = 149
@@ -635,22 +611,16 @@ object frm_main: Tfrm_main
           Width = 63
           Height = 19
           Caption = #21512'   '#26684#65306
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_tag_bad_qty: TLabel
-          Left = 410
-          Top = 50
-          Width = 64
-          Height = 19
+          Left = 388
+          Top = 58
+          Width = 84
+          Height = 25
           Caption = #19981#21512#26684#65306
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clRed
-          Font.Height = -16
+          Font.Height = -21
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
@@ -680,6 +650,7 @@ object frm_main: Tfrm_main
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
+          OnDblClick = lbl_woDblClick
         end
         object lbl_product_code: TLabel
           Left = 69
@@ -700,12 +671,6 @@ object frm_main: Tfrm_main
           Width = 9
           Height = 19
           Caption = '0'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_done_qty: TLabel
           Left = 207
@@ -713,12 +678,6 @@ object frm_main: Tfrm_main
           Width = 9
           Height = 19
           Caption = '0'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_good_qty: TLabel
           Left = 325
@@ -726,22 +685,16 @@ object frm_main: Tfrm_main
           Width = 9
           Height = 19
           Caption = '0'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_bad_qty: TLabel
-          Left = 469
-          Top = 50
-          Width = 9
-          Height = 19
+          Left = 465
+          Top = 58
+          Width = 11
+          Height = 25
           Caption = '0'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clRed
-          Font.Height = -16
+          Font.Height = -21
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
@@ -861,20 +814,14 @@ object frm_main: Tfrm_main
           OnClick = spb_refreshClick
         end
         object lbl_tag_state: TLabel
-          Left = 410
+          Left = 268
           Top = 75
           Width = 63
           Height = 19
           Caption = #29366'   '#24577#65306
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_state: TLabel
-          Left = 469
+          Left = 325
           Top = 75
           Width = 9
           Height = 19
@@ -931,20 +878,14 @@ object frm_main: Tfrm_main
           OnClick = spb_startClick
         end
         object lbl_tag_weld_count: TLabel
-          Left = 260
+          Left = 149
           Top = 75
           Width = 80
           Height = 19
           Caption = #28938#25509#27425#25968#65306
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentFont = False
         end
         object lbl_weld_count: TLabel
-          Left = 340
+          Left = 227
           Top = 75
           Width = 9
           Height = 19
@@ -964,6 +905,13 @@ object frm_main: Tfrm_main
           AllowAllUp = True
           GroupIndex = 1
           Caption = #25277#26816
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clOlive
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           OnClick = spb_randomClick
         end
         object spb_first: TSpeedButton
@@ -974,6 +922,13 @@ object frm_main: Tfrm_main
           AllowAllUp = True
           GroupIndex = 1
           Caption = #39318#20214
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clOlive
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           OnClick = spb_firstClick
         end
         object spb_last: TSpeedButton
@@ -984,6 +939,13 @@ object frm_main: Tfrm_main
           AllowAllUp = True
           GroupIndex = 1
           Caption = #26411#20214
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clOlive
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           OnClick = spb_lastClick
         end
         object spb_debug: TSpeedButton
@@ -994,6 +956,13 @@ object frm_main: Tfrm_main
           AllowAllUp = True
           GroupIndex = 1
           Caption = #35843#26426
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clNavy
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           OnClick = spb_debugClick
         end
         object spb_replace: TSpeedButton
@@ -1004,6 +973,13 @@ object frm_main: Tfrm_main
           AllowAllUp = True
           GroupIndex = 1
           Caption = #25442#22411
+          Flat = True
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clNavy
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           OnClick = spb_replaceClick
         end
       end
@@ -1016,44 +992,46 @@ object frm_main: Tfrm_main
       Caption = 'tbs_tip'
       ImageIndex = 1
       TabVisible = False
-      object pnl_tipsbar: TPanel
+      object lbl_tip: TLabel
         Left = 0
         Top = 0
         Width = 515
         Height = 129
         Align = alClient
-        BevelOuter = bvNone
+        Alignment = taCenter
+        Caption = 'lbl_tip'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -21
+        Font.Height = -27
         Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentBackground = False
-        ParentColor = True
+        Font.Style = []
+        ParentFont = False
+        Layout = tlCenter
+        WordWrap = True
+        ExplicitWidth = 72
+        ExplicitHeight = 33
+      end
+      object rdg_unproductive: TRadioGroup
+        Left = 315
+        Top = 3
+        Width = 185
+        Height = 105
+        Caption = #38750#29983#20135#24615
+        Columns = 3
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        Items.Strings = (
+          #35843#26426
+          #25442#22411
+          #39318#20214
+          #25277#26816
+          #26411#20214)
         ParentFont = False
         TabOrder = 0
-        object rdg_unproductive: TRadioGroup
-          Left = 40
-          Top = 0
-          Width = 185
-          Height = 105
-          Caption = #38750#29983#20135#24615
-          Columns = 3
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          Items.Strings = (
-            #35843#26426
-            #25442#22411
-            #39318#20214
-            #25277#26816
-            #26411#20214)
-          ParentFont = False
-          TabOrder = 0
-          Visible = False
-        end
+        Visible = False
       end
     end
   end

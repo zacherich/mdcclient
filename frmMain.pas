@@ -72,19 +72,20 @@ type
     spb_start: TSpeedButton;
     lbl_tag_weld_count: TLabel;
     lbl_weld_count: TLabel;
-    pnl_tipsbar: TPanel;
     spb_random: TSpeedButton;
     spb_first: TSpeedButton;
     spb_last: TSpeedButton;
     spb_debug: TSpeedButton;
     spb_replace: TSpeedButton;
+    lbl_tip: TLabel;
     rdg_unproductive: TRadioGroup;
     procedure spb_firstClick(Sender: TObject);
     procedure spb_randomClick(Sender: TObject);
     procedure spb_lastClick(Sender: TObject);
     procedure spb_debugClick(Sender: TObject);
     procedure spb_replaceClick(Sender: TObject);
-    type uvTipType=(right,error,warn);
+    procedure lbl_woDblClick(Sender: TObject);
+    type uvTipType=(right, error, warn);
 
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -127,30 +128,29 @@ implementation
 
 {$R *.dfm}
 
-uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule, frmFinish, frmContainer, frmMESLine;
+uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule,
+     frmFinish, frmContainer, frmMESLine, frmReplaceWO;
 
 procedure Tfrm_main.InfoTips(fvContent : String; fvTipType : uvTipType = error);
 begin
-  pnl_tipsbar.Caption := fvContent;
+  lbl_tip.Caption := fvContent;
+  lbl_tip.Font.Style := lbl_tip.Font.Style + [fsBold];
   tbs_tip.Show;
   case fvTipType of
   right:
     begin
       Self.Color := clLime;
-      pnl_tipsbar.Font.Color := clBlack;
-      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+      lbl_tip.Font.Color := clBlack;
     end;
   error:
     begin
       Self.Color := clRed;
-      pnl_tipsbar.Font.Color := clWhite;
-      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+      lbl_tip.Font.Color := clWhite;
     end;
   warn:
     begin
       Self.Color := clInfoBk;
-      pnl_tipsbar.Font.Color := clBlack;
-      pnl_tipsbar.Font.Style := pnl_tipsbar.Font.Style + [fsBold];
+      lbl_tip.Font.Color := clBlack;
     end;
   end;
   tim_cleartips.Enabled := True;
@@ -236,7 +236,7 @@ begin
                 begin
                   frm_main.InfoTips('MDC服务地址获取失败，请联系管理员！');
                   frm_set.ShowModal;
-                  frm_set.TabSheet2.Show;
+                  frm_set.tbs_collection.Show;
                   frm_set.lbl_host.Caption:='';
                   frm_set.lbl_port.Caption:='';
                 end;
@@ -246,7 +246,7 @@ begin
               frm_main.InfoTips('Redis队列名称必须设置，请联系管理员！');
               //Application.MessageBox(PChar('Redis队列名称必须设置，请联系管理员设置！'),'错误',MB_ICONERROR);
               frm_set.ShowModal;
-              frm_set.TabSheet2.Show;
+              frm_set.tbs_collection.Show;
               frm_set.lbl_host.Caption:='';
               frm_set.lbl_port.Caption:='';
             end;
@@ -255,7 +255,7 @@ begin
         begin
           frm_main.InfoTips('设备信息获取失败，请联系管理员！');
           frm_set.ShowModal;
-          frm_set.TabSheet1.Show;
+          frm_set.tbs_equipment.Show;
           frm_set.lbl_app_id.Caption := '';
           frm_set.lbl_app_code.Caption := '';
           frm_set.lbl_app_name.Caption := '';
@@ -272,7 +272,7 @@ begin
     begin
       frm_main.InfoTips('设备编码必须设置，请联系管理员！');
       frm_set.ShowModal;
-      frm_set.TabSheet1.Show;
+      frm_set.tbs_equipment.Show;
       frm_set.lbl_app_id.Caption := '';
       frm_set.lbl_app_code.Caption := '';
       frm_set.lbl_app_name.Caption := '';
@@ -296,7 +296,7 @@ begin
   data_module.cds_workorder.EmptyDataSet;
   if gvline_type='flowing' then
     begin
-      vO := SO(getLineWorkorder);
+      vO := SO(getLineWorkorder(gvNon_default_wo_id));
       if vO.B['result.success'] then  //成功刷新主线子工单
         begin
           if gvApp_testing then
@@ -398,7 +398,7 @@ begin
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
           gvOutput_manner :=  vO.S['result.output_manner'];
-          log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的扫描成功成功！');
+          log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的刷新成功！');
         end
       else  //刷新工单失败
         begin
@@ -554,6 +554,9 @@ begin
 end;
 
 procedure Weld2yield;
+var
+  vBadmode_lines : String;
+  vO: ISuperObject;
 begin
   Inc(uvWeld_count);
   if uvWeld_count<gvWeld_count then
@@ -586,7 +589,6 @@ begin
             end;
           frm_main.spb_debug.Down := False;
           frm_main.rdg_unproductive.ItemIndex := -1;
-          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
         end;
       1:     //换型的产量算作正常生产
         begin
@@ -600,29 +602,174 @@ begin
             end;
           frm_main.spb_replace.Down := False;
           frm_main.rdg_unproductive.ItemIndex := -1;
-          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
         end;
       2:     //首件的产量算作报废
         begin
+          vBadmode_lines := '[{"badmode_id": 206, "badmode_qty": 1}]';
           frm_main.spb_first.Down := False;
           frm_main.rdg_unproductive.ItemIndex := -1;
-          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+          if gvline_type='flowing' then    //主线上
+            begin
+              vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials(gvConsumelist);
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
+                end;
+            end
+          else if gvline_type='station' then    //工作站
+            begin
+              vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials;
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
+                end;
+            end;
         end;
       3:     //抽检的产量算作报废
         begin
+          vBadmode_lines := '[{"badmode_id": 205, "badmode_qty": 1}]';
           frm_main.spb_random.Down := False;
           frm_main.rdg_unproductive.ItemIndex := -1;
-          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+          if gvline_type='flowing' then    //主线上
+            begin
+              vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials(gvConsumelist);
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
+                end;
+            end
+          else if gvline_type='station' then    //工作站
+            begin
+              vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials;
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
+                end;
+            end;
         end;
       4:     //末件的产量算作报废
         begin
+          vBadmode_lines := '[{"badmode_id": 207, "badmode_qty": 1}]';
           frm_main.spb_last.Down := False;
           frm_main.rdg_unproductive.ItemIndex := -1;
-          //frm_main.lbl_bad_qty.Caption:=IntToStr(frm_main.rdg_unproductive.ItemIndex);
+          if gvline_type='flowing' then    //主线上
+            begin
+              vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials(gvConsumelist);
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
+                end;
+            end
+          else if gvline_type='station' then    //工作站
+            begin
+              vO := SO(workticket_FINISH(gvWorkticket_id, gvApp_id, 1, vBadmode_lines));
+              if vO.B['result.success'] then  //报工成功
+                begin
+                  frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+1);
+                  frm_main.lbl_bad_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_bad_qty.Caption)+1);
+                  RefreshWorkorder;
+                  RefreshMaterials;
+                end
+              else
+                begin
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
+                end;
+            end;
         end;
       end;
       uvWeld_count := 0;
     end;
+end;
+
+function Validity_check : Bool;
+begin
+  if gvline_type='flowing' then    //主线上
+    begin
+      //当前产线没有子工单
+      if gvWorkorder_id <= 0 then
+        begin
+          frm_main.InfoTips('需要工单！' + #13 + '请先刷新工单，再操作！');
+          Result := False;
+          Exit;
+        end;
+      if gvProduct_id <= 0 then
+        begin
+          frm_main.InfoTips('需要选产品！' + #13 + '请先选择产品，再操作！');
+          Result := False;
+          Exit;
+        end;
+      if StrToInt(frm_main.lbl_good_qty.Caption)>StrToInt(frm_main.lbl_todo_qty.Caption) then
+        begin
+          frm_main.InfoTips('合格产品产品超出应做数量！');
+          Result := False;
+          Exit;
+        end;
+    end
+  else if gvline_type='station' then    //工作站
+    begin
+      //当前工位没有子工单
+      if gvWorkticket_id <= 0 then
+        begin
+          frm_main.InfoTips('需要工单！' + #13 + '请先扫描工单，再操作！');
+          Result := False;
+          Exit;
+        end;
+     if gvOutput_qty>gvInput_qty then
+      begin
+        frm_main.InfoTips('合格产品产品超出应做数量！');
+        Result := False;
+        Exit;
+      end;
+    end;
+  //当前工位没有员工
+  if gvStaff_code='' then
+    begin
+      frm_main.InfoTips('需要操作员！' + #13 + '请先扫员工条码，再操作！');
+      Result := False;
+      Exit;
+    end;
+  Result := True;
 end;
 
 procedure Operation_check;
@@ -659,9 +806,36 @@ var
   vFile : TFileStream;
   vO : ISuperObject;
   lvDataJson, lvMdcJson, vTest_field, vTest_value,
-  vTest_operator, vTest_SN_value, vTest_result_value : String;
+  vTest_operator, vTest_SN_value, vTest_result_value, vData_type : String;
   i, vP : integer;
 begin
+  case frm_main.rdg_unproductive.ItemIndex of
+  -1:    //正常生产的产量算作正常生产
+    begin
+      vData_type := 'production';
+    end;
+  0:     //调机的产量算作正常生产
+    begin
+      vData_type := 'debug';
+    end;
+  1:     //换型的产量算作正常生产
+    begin
+      vData_type := 'replace';
+    end;
+  2:     //首件的产量算作报废
+    begin
+      vData_type := 'first';
+    end;
+  3:     //抽检的产量算作报废
+    begin
+      vData_type := 'random';
+    end;
+  4:     //末件的产量算作报废
+    begin
+      vData_type := 'last';
+    end;
+  end;
+
   try
     case gvFile_type of
       0://普通文本文件
@@ -669,6 +843,7 @@ begin
           SplitStr(GetLastLine(fvFileName), gvDeli, gvCol_count, uvData);
           if uvData.Count>0 then
             begin
+              Weld2yield;
               with data_module.cds_mdc do
                 begin
                   try
@@ -728,7 +903,7 @@ begin
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -775,7 +950,6 @@ begin
                       begin
                         log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       end;
-                    Weld2yield;
                     Operation_check;
 
                   except on e:Exception do
@@ -797,7 +971,10 @@ begin
             begin
               uvData.Add(uvList[i]);
             end;
+          log('取得文件内容'+uvData.Text);
           if uvData.Text<>'' then vO := XMLParseString(uvData.Text,true);
+          Weld2yield;
+          log('解析文件内容'+vO.AsString);
           if vO.asObject.Count>0 then
             begin
               with data_module.cds_mdc do
@@ -817,9 +994,8 @@ begin
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
                     log(lvDataJson);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     log(lvMdcJson);
-                    Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -859,6 +1035,7 @@ begin
             end;
           if uvData.Count>0 then
             begin
+              Weld2yield;
               with data_module.cds_mdc do
                 begin
                   try
@@ -875,8 +1052,7 @@ begin
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                    Weld2yield;
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -908,6 +1084,7 @@ begin
         end;
       3://测试机2文件
         begin
+          Sleep (gvDelay);
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
           uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
@@ -949,7 +1126,7 @@ begin
                           end;
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now),'P', gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
                     Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
@@ -1119,6 +1296,7 @@ begin
   gvHeader_row := ini_set.ReadInteger('collection', 'header_row', gvHeader_row);
   gvBegin_row := ini_set.ReadInteger('collection', 'begin_row', gvBegin_row);
   gvEnd_row := ini_set.ReadInteger('collection', 'end_row', gvEnd_row);
+  gvDelay := ini_set.ReadInteger('collection', 'delay', gvDelay);
   gvDelimiter := ini_set.ReadString('collection', 'delimiter', gvDelimiter);
   if gvDelimiter='Tab' then
     gvDeli := #9
@@ -1136,6 +1314,8 @@ begin
   gvSave_PWD := ini_set.ReadBool('profile', 'save_pwd', gvSave_PWD);
   gvUserName := ini_set.ReadString('profile', 'user_name', gvUserName);
   gvPassword := ini_set.ReadString('profile', 'password', gvPassword);
+  gvPrinter_id := ini_set.ReadInteger('profile', 'printer_id', gvPrinter_id);
+  gvPrinter_name := ini_set.ReadString('profile', 'printer_name', gvPrinter_name);
 
   //
   gvWorkorder_barcode := ini_set.ReadString('job', 'workorder', gvWorkorder_barcode);
@@ -1260,18 +1440,21 @@ begin
     begin
       frm_main.InfoTips('数据采集模板没有设置，请联系管理员设置！');
       frm_set.ShowModal;
-      frm_set.TabSheet2.Show;
+      frm_set.tbs_collection.Show;
     end;
   WorkorderInfoCDS;
   MaterialsInfoCDS;
   BadmodeCDS;
   MESLineCDS;
+  ReplaceWOCDS;
   StationCDS;
+  PrinterCDS;
   RefreshEquipment;
   RefreshWorkorder;
   RefreshMaterials;
   RefreshStaff;
   tbs_wo.Show;
+  tbs_workorder.Show;
   if gvDoing_qty>0 then
     begin
       lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
@@ -1294,7 +1477,7 @@ begin
       frm_main.InfoTips('数据采集目录没有设置，请联系管理员设置！');
       //Application.MessageBox(PChar('数据采集目录没有设置，请联系管理员设置！'),'错误',MB_ICONERROR);
       frm_set.ShowModal;
-      frm_set.TabSheet2.Show;
+      frm_set.tbs_collection.Show;
     end;
 end;
 
@@ -1373,6 +1556,65 @@ begin
   frm_set.ShowModal;
 end;
 
+procedure Tfrm_main.lbl_woDblClick(Sender: TObject);
+var
+  vO, vResult: ISuperObject;
+  vA: TSuperArray;
+  i: Integer;
+begin
+  if gvline_type='flowing' then    //主线上
+    begin
+      if gvDoing_qty <> 0 then
+        begin
+          frm_main.InfoTips('待报工数量为:'+IntToStr(gvDoing_qty)+'，不能切换工单！');
+          Exit;
+        end;
+      if Validity_check then
+        begin
+          vO := SO(getLineWorkorder);
+          if vO.B['result.success'] then  //获取产线信息成功
+            begin
+              vA := vO.A['result.orderlist'];
+              if vA.Length>0 then
+                begin
+                  with data_module.cds_replacewo do
+                    begin
+                      EmptyDataSet;
+                      for i := 0 to vA.Length-1 do
+                        begin
+                          vResult := SO(vA[i].AsString);
+                          Append;
+                          FieldByName('order_id').AsInteger := vResult.I['order_id'];
+                          FieldByName ('order_name').AsString := vResult.S['order_name'];
+                          FieldByName('product_code').AsString := vResult.S['product_code'];
+                          FieldByName('input_qty').AsFloat := vResult.C['input_qty'];
+                          Post;
+                        end;
+                    end;
+                  frm_ReplaceWO.lbl_now_wo.Caption := gvWorkorder_name;
+                  frm_ReplaceWO.lbl_now_product.Caption := gvProduct_code;
+                  frm_ReplaceWO.lbl_now_input.Caption := lbl_todo_qty.Caption;
+                  frm_ReplaceWO.Show;
+                end
+              else
+                begin
+                  frm_main.InfoTips('没有可切换的工单，请联系管理员', warn);
+                  log(DateTimeToStr(now())+', [INFO] 没有可切换的工单，请联系管理员');
+                end;
+            end
+          else
+            begin
+              with data_module.cds_replacewo do
+                begin
+                  EmptyDataSet;
+                end;
+              frm_main.InfoTips('获取生产线工单失败:'+vO.S['result.message']);
+              log(DateTimeToStr(now())+', [INFO] 获取生产线工单失败:'+vO.S['result.message']);
+            end;
+        end;
+    end;
+end;
+
 procedure Tfrm_main.OxygenDirectorySpy1ChangeDirectory(Sender: TObject; ChangeRecord: TDirectoryChangeRecord);
 var
   vFileName: String;
@@ -1394,26 +1636,68 @@ end;
 
 procedure Tfrm_main.spb_debugClick(Sender: TObject);
 begin
+  if gvDoing_qty > 0 then
+    begin
+      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做调机！');
+      if spb_debug.Down then spb_debug.Down := False else spb_debug.Down := True;
+      Exit;
+    end;
   if spb_debug.Down then rdg_unproductive.ItemIndex := 0 else rdg_unproductive.ItemIndex := -1;
 end;
 
 procedure Tfrm_main.spb_replaceClick(Sender: TObject);
 begin
-  if spb_replace.Down then rdg_unproductive.ItemIndex := 1 else rdg_unproductive.ItemIndex := -1;
+  if gvDoing_qty > 0 then
+    begin
+      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做换型！');
+      if spb_replace.Down then spb_replace.Down := False else spb_replace.Down := True;
+      Exit;
+    end;
+  if Validity_check then
+    if spb_replace.Down then rdg_unproductive.ItemIndex := 1 else rdg_unproductive.ItemIndex := -1
+  else
+    if spb_replace.Down then spb_replace.Down := False else spb_replace.Down := True;
 end;
 procedure Tfrm_main.spb_firstClick(Sender: TObject);
 begin
-  if spb_first.Down then rdg_unproductive.ItemIndex := 2 else rdg_unproductive.ItemIndex := -1;
+  if gvDoing_qty > 0 then
+    begin
+      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做首件！');
+      if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
+      Exit;
+    end;
+  if Validity_check then
+    if spb_first.Down then rdg_unproductive.ItemIndex := 2 else rdg_unproductive.ItemIndex := -1
+  else
+    if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
 end;
 
 procedure Tfrm_main.spb_randomClick(Sender: TObject);
 begin
-  if spb_random.Down then rdg_unproductive.ItemIndex := 3 else rdg_unproductive.ItemIndex := -1;
+  if gvDoing_qty > 0 then
+    begin
+      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做抽检！');
+      if spb_random.Down then spb_random.Down := False else spb_random.Down := True;
+      Exit;
+    end;
+  if Validity_check then
+    if spb_random.Down then rdg_unproductive.ItemIndex := 3 else rdg_unproductive.ItemIndex := -1
+  else
+    if spb_random.Down then spb_random.Down := False else spb_random.Down := True;
 end;
 
 procedure Tfrm_main.spb_lastClick(Sender: TObject);
 begin
-  if spb_last.Down then rdg_unproductive.ItemIndex := 4 else rdg_unproductive.ItemIndex := -1;
+  if gvDoing_qty > 0 then
+    begin
+      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做末件！');
+      if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
+      Exit;
+    end;
+  if Validity_check then
+    if spb_last.Down then rdg_unproductive.ItemIndex := 4 else rdg_unproductive.ItemIndex := -1
+  else
+    if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
 end;
 
 
@@ -1450,82 +1734,67 @@ var
   i: Integer;
 begin
   RefreshStaff;
-  if gvStaff_code='' then
-    begin
-      frm_main.InfoTips('当前没有操作员，不能报工！');
-      //Application.MessageBox(PChar('当前没有操作员，不能报工！'),'错误',MB_ICONERROR);
-      Exit;
-    end;
   if gvDoing_qty = 0 then
     begin
       frm_main.InfoTips('待报工数量为0，不能报工！');
-      //Application.MessageBox(PChar('待报工数量为0，不能报工！'),'错误',MB_ICONERROR);
       Exit;
     end;
-  if gvWorkorder_id<=0 then
+  log(DateTimeToStr(now())+', [INFO]报工开始');
+  if Validity_check then
     begin
-      frm_main.InfoTips('当前没有工单，不能报工！');
-      //Application.MessageBox(PChar('当前没有工单，不能报工！'),'错误',MB_ICONERROR);
-      Exit;
-    end;
-  vO := SO(queryBadmode);
-  if vO.B['result.success'] then  //获取不良模式成功
-    begin
-      vA := vO.A['result.badmodelist'];
-      if vA.Length>0 then
+      vO := SO(queryBadmode);
+      if vO.B['result.success'] then  //获取不良模式成功
+        begin
+          vA := vO.A['result.badmodelist'];
+          if vA.Length>0 then
+            begin
+              with data_module.cds_badmode do
+                begin
+                  EmptyDataSet;
+                  FieldByName('badmode_name').ReadOnly := False;
+                  for i := 0 to vA.Length-1 do
+                    begin
+                      Append;
+                      vResult := SO(vA[i].AsString);
+                      FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
+                      FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
+                      FieldByName('badmode_qty').AsInteger := 0;
+                      Post;
+                    end;
+                  FieldByName('badmode_name').ReadOnly := True;
+                  Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
+                end;
+            end;
+          log(DateTimeToStr(now())+', [INFO]获取到不良模式');
+        end
+      else
         begin
           with data_module.cds_badmode do
             begin
               EmptyDataSet;
-              for i := 0 to vA.Length-1 do
-                begin
-                  Append;
-                  vResult := SO(vA[i].AsString);
-                  FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
-                  FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
-                  FieldByName('badmode_qty').AsInteger := 0;
-                  Post;
-                end;
-              Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
             end;
         end;
-    end
-  else
-    begin
-      with data_module.cds_badmode do
+          frm_finish.lbl_product_code.Caption := gvProduct_code;
+          frm_finish.lbl_doing_qty.Caption := IntToStr(gvDoing_qty);
+          frm_finish.edt_submit.Text := IntToStr(gvDoing_qty);
+      if gvline_type='flowing' then    //主线上
         begin
-          EmptyDataSet;
-        end;
-    end;
-  if gvline_type='flowing' then    //主线上
-    begin
-      vO := SO(Virtual_FINISH(gvProduct_id,gvDoing_qty));
-      if vO.B['result.success'] then  //报工成功
-        begin
-          lbl_doing_qty.Caption:='0';
-          gvDoing_qty:=0;
-          RefreshWorkorder;
-          RefreshMaterials(gvConsumelist);
-        end
-      else
-        begin
-          log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
-          frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
-          //Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
-        end;
-    end
-  else if gvline_type='station' then    //工作站
-    begin
-      frm_finish.lbl_product_code.Caption := lbl_product_code.Caption;
-      frm_finish.lbl_doing_qty.Caption := lbl_doing_qty.Caption;
-      frm_finish.edt_submit.Text := lbl_doing_qty.Caption;
-      if gvLastworkcenter and (gvOutput_manner='container') then    //如果是最后一道工序报工需要扫描容器或者产出标签
-        begin
-          frm_container.Show;
-        end
-      else
-        begin
+          frm_finish.lbl_tag_container.Visible := False;
+          frm_finish.lbl_container.Visible := False;
+          frm_finish.lbl_tag_submit.Visible := False;
+          frm_finish.edt_submit.Visible := False;
           frm_finish.Show;
+        end
+      else if gvline_type='station' then    //工作站
+        begin
+          if gvLastworkcenter and (gvOutput_manner='container') then    //如果是最后一道工序报工需要扫描容器或者产出标签
+            begin
+              frm_container.Show;
+            end
+          else
+            begin
+              frm_finish.Show;
+            end;
         end;
     end;
 end;
@@ -1533,7 +1802,7 @@ end;
 procedure Tfrm_main.tim_cleartipsTimer(Sender: TObject);
 begin
 
-  pnl_tipsbar.Caption := '';
+  lbl_tip.Caption := '';
   Self.Color := clBtnFace;
   tbs_wo.Show;
   tim_cleartips.Enabled := False;

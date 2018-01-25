@@ -19,6 +19,10 @@ type
     cds_mesline: TClientDataSet;
     dsc_station: TDataSource;
     cds_station: TClientDataSet;
+    dsc_replacewo: TDataSource;
+    cds_replacewo: TClientDataSet;
+    cds_printer: TClientDataSet;
+    dsc_printer: TDataSource;
     procedure cds_mdcNewRecord(DataSet: TDataSet);
     procedure cds_badmodeAggregates0Update(Agg: TAggregate);
   private
@@ -39,17 +43,27 @@ implementation
 uses frmMain, publicLib, frmFinish;
 
 procedure Tdata_module.cds_badmodeAggregates0Update(Agg: TAggregate);
+var
+  vSubmit_qty : Integer;
 begin
+  if frm_finish.edt_submit.Text='' then frm_finish.edt_submit.Text := '0';
+  if frm_finish.lbl_bad_qty.Caption='' then frm_finish.lbl_bad_qty.Caption := '0';
+  if frm_finish.lbl_good_qty.Caption='' then frm_finish.lbl_good_qty.Caption := '0';
+  try
+    vSubmit_qty := StrToInt(frm_finish.edt_submit.Text);
+  except
+    frm_main.InfoTips(Exception(ExceptObject).Message);
+  end;
   if Not VarIsNull(data_module.cds_badmode.Aggregates.Items[0].Value) then
     begin
-      if data_module.cds_badmode.Aggregates.Items[0].Value>StrToInt(frm_finish.edt_submit.Text) then
+      if data_module.cds_badmode.Aggregates.Items[0].Value>vSubmit_qty then
         begin
           Application.MessageBox(PChar('不合格数量不能超过待报工数量！'),'错误',MB_ICONERROR);
         end
       else
         begin
           frm_finish.lbl_bad_qty.Caption := IntToStr(data_module.cds_badmode.Aggregates.Items[0].Value);
-          frm_finish.lbl_good_qty.Caption := IntToStr(StrToInt(frm_finish.edt_submit.Text)-StrToInt(frm_finish.lbl_bad_qty.Caption));
+          frm_finish.lbl_good_qty.Caption := IntToStr(vSubmit_qty-StrToInt(frm_finish.lbl_bad_qty.Caption));
         end;
     end;
 end;

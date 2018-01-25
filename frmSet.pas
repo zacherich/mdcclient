@@ -5,14 +5,15 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.IniFiles,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.FileCtrl,
-  Vcl.Samples.Spin, Vcl.Buttons, Vcl.Grids, Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY;
+  Vcl.Samples.Spin, Vcl.Buttons, Vcl.Grids, Redis.Client, Redis.Commons, Redis.Values, Redis.NetLib.Factory, Redis.NetLib.INDY,
+  Vcl.DBCtrls;
 
 type
   Tfrm_set = class(TForm)
     OpenDialog1: TOpenDialog;
     ButtonedEdit1: TButtonedEdit;
-    PageControl1: TPageControl;
-    TabSheet1: TTabSheet;
+    pgc_set: TPageControl;
+    tbs_equipment: TTabSheet;
     Image1: TImage;
     lbl_tag_app_code: TLabel;
     lbl_tag_app_app_name: TLabel;
@@ -26,7 +27,7 @@ type
     lbl_station_code: TLabel;
     lbl_station_name: TLabel;
     edt_app_secret: TEdit;
-    TabSheet2: TTabSheet;
+    tbs_collection: TTabSheet;
     lbl_tag_data_path: TLabel;
     lbl_data_path: TLabel;
     GroupBox1: TGroupBox;
@@ -74,6 +75,8 @@ type
     edt_test_pass_value: TEdit;
     lbl_tag_operator_field: TLabel;
     edt_operator_field: TEdit;
+    tbs_base: TTabSheet;
+    dlc_printer: TDBLookupComboBox;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
@@ -117,7 +120,7 @@ begin
       if Trim(edt_queue_name.Text)='' then
         begin
           Application.MessageBox(PChar('Redis队列名称必须设置，请设置！'),'错误',MB_ICONERROR);
-          TabSheet2.Show;
+          tbs_collection.Show;
           edt_queue_name.SetFocus();
           edt_queue_name.SelectAll();
           Exit;
@@ -128,19 +131,19 @@ begin
           if not DirectoryExists(lbl_data_path.Caption) then
             begin
               Application.MessageBox(PChar('采集文件路径设置错误，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if not FileExists(lbl_template_file.Caption) then
             begin
               Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if stg_header_line_set.RowCount-1<0 then
             begin
               Application.MessageBox(PChar('模板文件字段不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           for i := 1 to stg_header_line_set.RowCount-1 do
@@ -148,13 +151,13 @@ begin
               if stg_header_line_set.Cells[2,i]='' then
                 begin
                   Application.MessageBox(PChar('标题别名不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
               if stg_header_line_set.Cells[3,i]='' then
                 begin
                   Application.MessageBox(PChar('标题类型不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
             end;
@@ -209,19 +212,19 @@ begin
           if not DirectoryExists(lbl_data_path.Caption) then
             begin
               Application.MessageBox(PChar('采集文件路径设置错误，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if not FileExists(lbl_template_file.Caption) then
             begin
               Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if stg_header_line_set.RowCount-1<0 then
             begin
               Application.MessageBox(PChar('模板文件字段不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           for i := 1 to stg_header_line_set.RowCount-1 do
@@ -229,13 +232,13 @@ begin
               if stg_header_line_set.Cells[2,i]='' then
                 begin
                   Application.MessageBox(PChar('标题别名不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
               if stg_header_line_set.Cells[3,i]='' then
                 begin
                   Application.MessageBox(PChar('标题类型不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
             end;
@@ -292,19 +295,19 @@ begin
           if not DirectoryExists(lbl_data_path.Caption) then
             begin
               Application.MessageBox(PChar('采集文件路径设置错误，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if not FileExists(lbl_template_file.Caption) then
             begin
               Application.MessageBox(PChar('模板文件不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           if stg_header_line_set.RowCount-1<0 then
             begin
               Application.MessageBox(PChar('模板文件字段不存在，请重新设置！'),'错误',MB_ICONERROR);
-              TabSheet2.Show;
+              tbs_collection.Show;
               Exit;
             end;
           for i := 1 to stg_header_line_set.RowCount-1 do
@@ -312,13 +315,13 @@ begin
               if stg_header_line_set.Cells[2,i]='' then
                 begin
                   Application.MessageBox(PChar('标题名称不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
               if stg_header_line_set.Cells[3,i]='' then
                 begin
                   Application.MessageBox(PChar('标题类型不能为空，请重新设置！'),'错误',MB_ICONERROR);
-                  TabSheet2.Show;
+                  tbs_collection.Show;
                   Exit;
                 end;
             end;
@@ -394,6 +397,11 @@ begin
     ini_set.WriteString('equipment', 'test_result_field', gvTest_result_field);
     gvTest_pass_value := Trim(edt_test_pass_value.Text);
     ini_set.WriteString('equipment', 'test_pass_value', gvTest_pass_value);
+    gvPrinter_id := dlc_printer.KeyValue;
+    ini_set.WriteInteger('profile', 'printer_id', gvPrinter_id);
+    gvPrinter_name := dlc_printer.Text;
+    ini_set.WriteString('profile', 'printer_name', gvPrinter_name);
+
     ini_set.UpdateFile;
     //设备信息保存
     if Application.MessageBox(PChar('设备信息、数据采集配置成功,是否保存?'),'提示',MB_OKCANCEL)=IDOK then
@@ -404,7 +412,7 @@ begin
   else
     begin
       Application.MessageBox(PChar('设备信息需要验证，请先做验证！'),'错误',MB_ICONERROR);
-      TabSheet1.Show;
+      tbs_equipment.Show;
       edt_app_code.SetFocus();
       edt_app_code.SelectAll();
     end;
@@ -544,6 +552,7 @@ begin
             end;
         end;
     end;
+  queryPrinter;
 end;
 
 procedure Tfrm_set.lbl_data_pathClick(Sender: TObject);
