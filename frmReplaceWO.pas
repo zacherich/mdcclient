@@ -1,4 +1,4 @@
-unit frmReplaceWO;
+﻿unit frmReplaceWO;
 
 interface
 
@@ -47,7 +47,7 @@ begin
       else  //选择的工单和当前产线工单不一致
         begin
           gvProduct_id := 0;
-          gvProduct_code := '无';
+          gvProduct_code := '';
           frm_main.lbl_product_code.Caption := gvProduct_code;
           frm_main.lbl_todo_qty.Caption := '0';
           frm_main.lbl_done_qty.Caption := '0';
@@ -71,6 +71,15 @@ end;
 procedure Tfrm_ReplaceWO.spb_default_woClick(Sender: TObject);
 begin
   gvNon_default_wo_id := 0;
+  gvProduct_id := 0;
+  gvProduct_code := '';
+  frm_main.lbl_product_code.Caption := gvProduct_code;
+  frm_main.lbl_todo_qty.Caption := '0';
+  frm_main.lbl_done_qty.Caption := '0';
+  frm_main.lbl_good_qty.Caption := '0';
+  frm_main.lbl_bad_qty.Caption := '0';
+  frm_main.lbl_weld_count.Caption := '0';
+  frm_main.lbl_wo_row.Caption := '0';
   Self.Hide;
   RefreshEquipment;
   RefreshWorkorder;

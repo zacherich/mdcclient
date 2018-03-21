@@ -14,7 +14,6 @@ type
     pgc_under: TPageControl;
     tbs_collection: TTabSheet;
     tbs_log: TTabSheet;
-    lbx_log: TListBox;
     dbg_collection: TDBGrid;
     pnl_collection: TPanel;
     lbl_tag_send_qty: TLabel;
@@ -79,6 +78,9 @@ type
     spb_replace: TSpeedButton;
     lbl_tip: TLabel;
     rdg_unproductive: TRadioGroup;
+    lbx_log: TListBox;
+    lbl_tag_qty: TLabel;
+    lbl_tag_count: TLabel;
     procedure spb_firstClick(Sender: TObject);
     procedure spb_randomClick(Sender: TObject);
     procedure spb_lastClick(Sender: TObject);
@@ -115,21 +117,23 @@ type
   procedure RefreshMaterials(fvConsumelist : String = '');
   procedure RefreshStaff;
   procedure Collection_Data(const fvFileName : String);
+  procedure Get_InspectionList;
 
 var
   frm_main: Tfrm_main;
   uvTip_count : Integer = 0;
   uvWeld_count : Integer = 0;
-  uvList, uvData, uvDirSpy : TStringList;
+  uvFirst_count  : Integer = 0;
+  uvRandom_count  : Integer = 0;
+  uvLast_count  : Integer = 0;
   uvInput : String = '';
   uvStart : DWORD;
-
 implementation
 
 {$R *.dfm}
 
 uses frmSet, publicLib, SuperObject, SuperXmlParser, dataModule,
-     frmFinish, frmContainer, frmMESLine, frmReplaceWO;
+     frmFinish, frmContainer, frmMESLine, frmReplaceWO, frmInspect;
 
 procedure Tfrm_main.InfoTips(fvContent : String; fvTipType : uvTipType = error);
 begin
@@ -309,10 +313,12 @@ begin
               gvWorkorder_id := vO.I['result.workorder_id'];
               gvWorkorder_name := vO.S['result.workorder_name'];
               frm_main.lbl_wo.Caption := gvWorkorder_name;
+              gvFin_product_id := vO.I['result.product_id'];
+              gvFin_product_code := vO.S['result.product_code'];
               gvProduct_id :=  vO.I['result.product_id'];
               gvProduct_code := vO.S['result.product_code'];
               frm_main.lbl_product_code.Caption := gvProduct_code;
-              gvInput_qty :=  vO.C['result.input_qty'];
+              gvInput_qty := vO.C['result.input_qty'];
               frm_main.lbl_todo_qty.Caption := FloatToStr(gvInput_qty);
             end
           else
@@ -321,6 +327,9 @@ begin
               gvMainorder_name := vO.S['result.mainorder_name'];
               gvWorkorder_id := vO.I['result.workorder_id'];
               gvWorkorder_name := vO.S['result.workorder_name'];
+              gvFin_product_id := vO.I['result.product_id'];
+              gvFin_product_code := vO.S['result.product_code'];
+              gvInput_qty := vO.C['result.input_qty'];
               frm_main.lbl_wo.Caption := gvWorkorder_name;
               vVirtuallist := vO.A['result.virtuallist'];
               if vVirtuallist.Length>0 then   //存在有虚拟物料记录
@@ -332,7 +341,7 @@ begin
                           vResult_v := SO(vVirtuallist[i].AsString);
                           Append;
                           FieldByName('product_id').AsInteger := vResult_v.I['product_id'];
-                          FieldByName('product_code').AsString := vResult_v.S['product_code'];
+                          FieldByName('product_code').AsWideString := vResult_v.S['product_code'];
                           FieldByName('input_qty').AsFloat := vResult_v.C['input_qty'];
                           FieldByName('todo_qty').AsFloat := vResult_v.C['todo_qty'];
                           FieldByName('output_qty').AsFloat := vResult_v.C['output_qty'];
@@ -340,7 +349,7 @@ begin
                           FieldByName('badmode_qty').AsFloat := vResult_v.C['badmode_qty'];
                           if vResult_v.I['weld_count']=0 then FieldByName('weld_count').AsInteger := 1
                           else FieldByName('weld_count').AsInteger := vResult_v.I['weld_count'];
-                          FieldByName('materiallist').AsString := vResult_v.S['materiallist'];
+                          FieldByName('materiallist').AsWideString := vResult_v.S['materiallist'];
                           Post;
                         end;
                       First;
@@ -369,12 +378,11 @@ begin
           log(DateTimeToStr(now())+', [ERROR] 生产线没有本道工位的工单，错误信息：'+vO.S['result.message']);
         end;
       frm_main.spb_start.Hide;
-      frm_main.spb_refresh.Show;
     end
   else if gvline_type='station' then
     begin
       vO := SO(scanWorkticket(gvWorkorder_barcode));
-      if vO.B['result.success'] then  //成功刷新工单
+      if vO.B['result.success'] then  //成功刷新支线工单
         begin
           gvMainorder_id := vO.I['result.mainorder_id'];
           gvMainorder_name := vO.S['result.mainorder_name'];
@@ -398,6 +406,8 @@ begin
           frm_main.lbl_done_qty.Caption := FloatToStr(gvOutput_qty+gvBadmode_qty);
           gvLastworkcenter := vO.B['result.lastworkcenter'];
           gvOutput_manner :=  vO.S['result.output_manner'];
+          gvFin_product_id := vO.I['result.finalproduct_id'];
+          gvFin_product_code := vO.S['result.finalproduct_code'];
           log(DateTimeToStr(now())+', [INFO] 工单号【'+gvWorkorder_barcode+'】的刷新成功！');
         end
       else  //刷新工单失败
@@ -405,7 +415,6 @@ begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_barcode+'】的不应该出现在本道工位，错误信息：'+vO.S['result.message']);
         end;
       frm_main.spb_start.Show;
-      frm_main.spb_refresh.Hide;
     end;
 end;
 
@@ -426,11 +435,13 @@ end;
 
 procedure RefreshMaterials(fvConsumelist : String = '');
 var
+  vsTemp : String;
   vO_c, vO_m, vResult_c, vResult_m: ISuperObject;
   vMaterials, vConsume : TSuperArray;
   c , m: Integer;
 begin
   vO_m := SO(getFeedMaterials);
+  vsTemp:=vO_m.AsObject.S['result.success'];
   if vO_m.B['result.success'] then  //成功得到设备所在工位的上料信息
     begin
       vMaterials := vO_m.A['result.materiallist'];
@@ -478,7 +489,7 @@ begin
                   vResult_c := SO(vConsume[c].AsString);
                   Append;
                   FieldByName('material_id').AsInteger := vResult_c.I['material_id'];
-                  FieldByName('material_code').AsString := vResult_c.S['material_code'];
+                  FieldByName('material_code').AsWideString := vResult_c.S['material_code'];
                   FieldByName('input_qty').AsFloat := vResult_c.C['input_qty'];
                   FieldByName('consume_qty').AsFloat := vResult_c.C['consume_qty'];
                   FieldByName('consume_unit').AsFloat := vResult_c.C['consume_unit'];
@@ -490,7 +501,7 @@ begin
                         begin
                           FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
                           FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
-                          FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
+                          FieldByName('materiallot_name').AsWideString := vResult_m.S['materiallot_name'];
                           Break;
                         end;
                     end;
@@ -508,14 +519,14 @@ begin
                   Append;
                   vResult_c := SO(vConsume[c].AsString);
                   FieldByName('material_id').AsInteger := vResult_c.I['material_id'];
-                  FieldByName('material_code').AsString := vResult_c.S['material_code'];
+                  FieldByName('material_code').AsWideString := vResult_c.S['material_code'];
                   FieldByName('input_qty').AsFloat := vResult_c.C['input_qty'];
                   FieldByName('consume_qty').AsFloat := vResult_c.C['consume_qty'];
                   FieldByName('material_qty').AsFloat := 0;
                   FieldByName('consume_unit').AsFloat := vResult_c.C['consume_unit'];
                   FieldByName('leave_qty').AsFloat := vResult_c.C['leave_qty'];
                   FieldByName('materiallot_id').AsInteger := 0;
-                  FieldByName('materiallot_name').AsString := '';
+                  FieldByName('materiallot_name').AsWideString := '';
                   Post;
                 end;
             end;
@@ -530,14 +541,14 @@ begin
                   Append;
                   vResult_m := SO(vMaterials[m].AsString);
                   FieldByName('material_id').AsInteger := vResult_m.I['material_id'];
-                  FieldByName('material_code').AsString := vResult_m.S['material_code'];
+                  FieldByName('material_code').AsWideString := vResult_m.S['material_code'];
                   FieldByName('input_qty').AsFloat := 0;
                   FieldByName('consume_qty').AsFloat := 0;
                   FieldByName('material_qty').AsFloat := vResult_m.C['material_qty'];
                   FieldByName('consume_unit').AsFloat := 0;
                   FieldByName('leave_qty').AsFloat := 0;
                   FieldByName('materiallot_id').AsInteger := vResult_m.I['materiallot_id'];
-                  FieldByName('materiallot_name').AsString := vResult_m.S['materiallot_name'];
+                  FieldByName('materiallot_name').AsWideString := vResult_m.S['materiallot_name'];
                   Post;
                 end;
             end;
@@ -606,8 +617,6 @@ begin
       2:     //首件的产量算作报废
         begin
           vBadmode_lines := '[{"badmode_id": 206, "badmode_qty": 1}]';
-          frm_main.spb_first.Down := False;
-          frm_main.rdg_unproductive.ItemIndex := -1;
           if gvline_type='flowing' then    //主线上
             begin
               vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
@@ -620,8 +629,8 @@ begin
                 end
               else
                 begin
-                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
-                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！');
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】首件报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】首件报工失败，错误信息：'+vO.S['result.message']+'！');
                 end;
             end
           else if gvline_type='station' then    //工作站
@@ -636,16 +645,36 @@ begin
                 end
               else
                 begin
-                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
-                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
+                  log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】首件报工失败，错误信息：'+vO.S['result.message']);
+                  frm_main.InfoTips('工单号【'+gvWorkorder_name+'】首件报工失败，错误信息：'+vO.S['result.message']+'！', warn);
                 end;
+            end;
+          Inc(uvFirst_count);
+          frm_main.lbl_tag_count.Caption:=IntToStr(gvFirst_count);
+          frm_main.lbl_tag_qty.Caption:=IntToStr(uvFirst_count);
+          if uvFirst_count<gvFirst_count then
+            begin
+              frm_main.InfoTips('成功完成'+IntToStr(uvFirst_count)+'件首件，还要做'+IntToStr(gvFirst_count-uvFirst_count)+'件。',warn);
+              Inc(uvFirst_count);
+            end
+          else
+            begin
+              frm_main.spb_first.Down := False;
+              if data_module.cds_inspect.RecordCount>0 then
+                frm_Inspect.Show
+              else
+                begin
+                  frm_main.rdg_unproductive.ItemIndex := -1;
+                  frm_main.InfoTips('首件检查记录没有设置，请联系管理员',warn);
+                end;
+              frm_main.lbl_tag_qty.Caption:=IntToStr(uvFirst_count);
+              uvFirst_count := 0;
+              frm_main.lbl_tag_qty.Caption:=IntToStr(uvFirst_count);
             end;
         end;
       3:     //抽检的产量算作报废
         begin
           vBadmode_lines := '[{"badmode_id": 205, "badmode_qty": 1}]';
-          frm_main.spb_random.Down := False;
-          frm_main.rdg_unproductive.ItemIndex := -1;
           if gvline_type='flowing' then    //主线上
             begin
               vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
@@ -678,12 +707,28 @@ begin
                   frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
                 end;
             end;
+          Inc(uvRandom_count);
+          if uvRandom_count<gvRandom_count then
+            begin
+              frm_main.InfoTips('成功完成'+IntToStr(uvRandom_count)+'件抽检，还要做'+IntToStr(uvRandom_count-gvRandom_count)+'件。',warn);
+              Inc(uvRandom_count);
+            end
+          else
+            begin
+              frm_main.spb_random.Down := False;
+              if data_module.cds_inspect.RecordCount>0 then
+                frm_Inspect.Show
+              else
+                begin
+                  frm_main.rdg_unproductive.ItemIndex := -1;
+                  frm_main.InfoTips('抽检检查记录没有设置，请联系管理员',warn);
+                end;
+              uvRandom_count := 0;
+            end;
         end;
       4:     //末件的产量算作报废
         begin
           vBadmode_lines := '[{"badmode_id": 207, "badmode_qty": 1}]';
-          frm_main.spb_last.Down := False;
-          frm_main.rdg_unproductive.ItemIndex := -1;
           if gvline_type='flowing' then    //主线上
             begin
               vO := SO(Virtual_FINISH(gvProduct_id, 1, vBadmode_lines));
@@ -715,6 +760,24 @@ begin
                   log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
                   frm_main.InfoTips('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！', warn);
                 end;
+            end;
+          Inc(uvLast_count);
+          if uvLast_count<gvLast_count then
+            begin
+              frm_main.InfoTips('成功完成'+IntToStr(uvLast_count)+'件末件，还要做'+IntToStr(uvLast_count-gvLast_count)+'件。',warn);
+              Inc(uvLast_count);
+            end
+          else
+            begin
+              frm_main.spb_last.Down := False;
+              if data_module.cds_inspect.RecordCount>0 then
+                frm_Inspect.Show
+              else
+                begin
+                  frm_main.rdg_unproductive.ItemIndex := -1;
+                  frm_main.InfoTips('末件检查记录没有设置，请联系管理员',warn);
+                end;
+              uvLast_count := 0;
             end;
         end;
       end;
@@ -801,14 +864,75 @@ begin
     end;
 end;
 
+procedure Get_InspectionList;
+var
+  vO, vResult: ISuperObject;
+  vA: TSuperArray;
+  i: Integer;
+begin
+  vO := SO(inspectionList);
+  if vO.B['result.success'] then  //获取检验清单成功
+    begin
+      vA := vO.A['result.parameters'];
+      if vA.Length>0 then
+        begin
+          gvProducttestid := vO.I['result.producttestid'];
+          with data_module.cds_inspect do
+            begin
+              EmptyDataSet;
+              FieldByName('name').ReadOnly := False;
+              FieldByName('type').ReadOnly := False;
+              FieldByName('code').ReadOnly := False;
+              for i := 0 to vA.Length-1 do
+                begin
+                  Append;
+                  vResult := SO(vA[i].AsString);
+                  FieldByName('id').AsInteger := vResult.I['id'];
+                  FieldByName('name').AsWideString := vResult.S['name'];
+                  FieldByName('type').AsWideString := vResult.S['type'];
+                  FieldByName('code').AsWideString := vResult.S['code'];
+                  Post;
+                end;
+              FieldByName('name').ReadOnly := True;
+              FieldByName('type').ReadOnly := True;
+              FieldByName('code').ReadOnly := True;
+              First;
+            end;
+        end
+      else
+        begin
+          with data_module.cds_inspect do
+            begin
+              EmptyDataSet;
+            end;
+          log(DateTimeToStr(now())+', [INFO]检验清单记录为空！');
+        end;
+    end
+  else
+    begin
+      with data_module.cds_inspect do
+        begin
+          EmptyDataSet;
+        end;
+      log(DateTimeToStr(now())+', [INFO]获取检验清单失败：'+vO.S['result.message']);
+    end;
+  //frm_Inspect.Caption := '安费诺宁德MES----';
+  frm_Inspect.lbl_wo.Caption := gvWorkorder_name;
+  frm_Inspect.lbl_product_code.Caption := gvFin_product_code;
+  frm_Inspect.lbl_input.Caption := FloatToStr(gvInput_qty);
+end;
+
 procedure Collection_Data(const fvFileName : String);
 var
   vFile : TFileStream;
-  vO : ISuperObject;
+  vO, vOInspect : ISuperObject;
   lvDataJson, lvMdcJson, vTest_field, vTest_value,
-  vTest_operator, vTest_SN_value, vTest_result_value, vData_type : String;
+  vTest_operator, vTest_SN_value, vTest_result_value, vData_type, vS : String;
+  vList, vData : TStringList;
   i, vP : integer;
 begin
+  vlist := TStringList.Create ;
+  vData := TStringList.Create ;
   case frm_main.rdg_unproductive.ItemIndex of
   -1:    //正常生产的产量算作正常生产
     begin
@@ -840,30 +964,30 @@ begin
     case gvFile_type of
       0://普通文本文件
         begin
-          SplitStr(GetLastLine(fvFileName), gvDeli, gvCol_count, uvData);
-          if uvData.Count>0 then
+          log(DateTimeToStr(now())+', [INFO]开始打开文件：'+fvFileName);
+          SplitStr(GetLastLine(fvFileName), gvDeli, gvCol_count, vData);
+          if vData.Count>0 then
             begin
               Weld2yield;
               with data_module.cds_mdc do
                 begin
                   try
-                    //DisableControls;
                     Append;
-                    if uvData.Count<=gvHeader_list.Count then
+                    if vData.Count<=gvHeader_list.Count then
                       begin
-                        for i := 0 to uvData.Count-1 do
+                        for i := 0 to vData.Count-1 do
                           begin
                             if gvHeader_list.ValueFromIndex[i]='String' then
-                              FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                              FieldByName(gvHeader_list.Names[i]).AsWideString := vData.Strings[i]
                             else if gvHeader_list.ValueFromIndex[i]='Float' then
-                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
                             else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
                             if gvApp_testing then
                               begin
-                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := uvData.Strings[i];
-                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := uvData.Strings[i];
-                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := vData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := vData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := vData.Strings[i];
                               end;
                           end;
                       end
@@ -872,20 +996,21 @@ begin
                         for i := 0 to gvHeader_list.Count-1 do
                           begin
                             if gvHeader_list.ValueFromIndex[i]='String' then
-                              FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                              FieldByName(gvHeader_list.Names[i]).AsWideString := vData.Strings[i]
                             else if gvHeader_list.ValueFromIndex[i]='Float' then
-                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                              FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
                             else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                              FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
                             if gvApp_testing then
                               begin
-                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := uvData.Strings[i];
-                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := uvData.Strings[i];
-                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := uvData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_operator_field then vTest_operator := vData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_SN_field then vTest_SN_value := vData.Strings[i];
+                                if gvHeader_list.Names[i]=gvTest_result_field then vTest_result_value := vData.Strings[i];
                               end;
                           end;
                       end;
                     Post;
+                    log(DateTimeToStr(now())+', [INFO]完成插入clientdataset'+fvFileName);
                     if gvTest_operator_field<>'' then  //设置了操作员字段
                       begin
                         if gvStaff_code<>vTest_operator then   //采集到的操作员不在岗
@@ -926,22 +1051,22 @@ begin
                           begin
                             if testingRecord(vTest_SN_value, TRUE, vTest_result_value) then
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clGreen );
                               end
                             else
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clGreen );
                               end;
                           end
                         else
                           begin
                             if testingRecord(vTest_SN_value, FALSE, vTest_result_value) then
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clRed);
                               end
                             else
                               begin
-                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                                log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clRed);
                               end;
                           end;
                         log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value+', 目前总共提交成功'+inttostr(gvSucceed)+'条。');
@@ -950,8 +1075,33 @@ begin
                       begin
                         log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
                       end;
+{自动首、末件，抽检数据采集
+                    case frm_main.rdg_unproductive.ItemIndex of
+                    2..4:    //首、末件，抽检数据采集
+                      begin
+                        vOInspect := SO(lvDataJson);
+                        with data_module.cds_inspect do
+                          begin
+                            Filter := 'code<>''''';
+                            Filtered := True;
+                            if RecordCount>0 then
+                              begin
+                                First;
+                                while not Eof do
+                                  begin
+                                    Edit;
+                                    FieldByName('value').AsWideString := vOInspect.S[FieldByName('code').AsWideString];
+                                    Post;
+                                    Next;
+                                  end;
+                              end;
+                            Filtered := False;
+                          end;
+                        frm_Inspect.Show;
+                      end;
+                    end;
+}
                     Operation_check;
-
                   except on e:Exception do
                     begin
                       Delete;
@@ -961,94 +1111,127 @@ begin
                     end;
                   end;
                 end;
+            end
+          else
+            begin
+              log(DateTimeToStr(now())+', [FAIL] 没读到文件内容:'+fvFileName);
             end;
         end;
       1://扭矩焊文件
         begin
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
-          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
             begin
-              uvData.Add(uvList[i]);
+              vData.Add(vList[i]);
             end;
-          log('取得文件内容'+uvData.Text);
-          if uvData.Text<>'' then vO := XMLParseString(uvData.Text,true);
-          Weld2yield;
-          log('解析文件内容'+vO.AsString);
-          if vO.asObject.Count>0 then
+          log(DateTimeToStr(now())+', [INFO] 取得文件内容'+vData.Text);
+          if vData.Count>0 then
             begin
-              with data_module.cds_mdc do
+              vO := XMLParseString(vData.Text,true);
+              Weld2yield;
+              log(DateTimeToStr(now())+', [INFO] 解析文件内容'+vO.AsString);
+              if vO.asObject.Count>0 then
                 begin
-                  try
-                    //DisableControls;
-                    Append;
-                    for i := 0 to gvHeader_list.Count-1 do
-                      begin
-                        if gvHeader_list.ValueFromIndex[i]='String' then
-                          FieldByName(gvHeader_list.Names[i]).AsString := vO.S[gvHeader_list.Names[i]]
-                        else if gvHeader_list.ValueFromIndex[i]='Float' then
-                          FieldByName(gvHeader_list.Names[i]).AsFloat := vO.D[gvHeader_list.Names[i]]
-                        else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                          FieldByName(gvHeader_list.Names[i]).AsInteger := vO.I[gvHeader_list.Names[i]];
-                      end;
-                    Post;
-                    lvDataJson := CDS1LineToJson(data_module.cds_mdc);
-                    log(lvDataJson);
-                    lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                    log(lvMdcJson);
-                    TThread.CreateAnonymousThread(
-                    procedure
-                    var
-                      Redis: IRedisClient;
+                  with data_module.cds_mdc do
                     begin
                       try
-                        Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
-                        Redis.Connect;
-                        Redis.LPUSH(gvQueue_name, [lvMdcJson]);
-                      finally
-                        Redis := nil;
+                        Append;
+                        for i := 0 to gvHeader_list.Count-1 do
+                          begin
+                            if gvHeader_list.ValueFromIndex[i]='String' then
+                              FieldByName(gvHeader_list.Names[i]).AsWideString := vO.S[gvHeader_list.Names[i]]
+                            else if gvHeader_list.ValueFromIndex[i]='Float' then
+                              FieldByName(gvHeader_list.Names[i]).AsFloat := vO.D[gvHeader_list.Names[i]]
+                            else if gvHeader_list.ValueFromIndex[i]='Integer' then
+                              FieldByName(gvHeader_list.Names[i]).AsInteger := vO.I[gvHeader_list.Names[i]];
+                          end;
+                        Post;
+                        lvDataJson := CDS1LineToJson(data_module.cds_mdc);
+                        lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'','','',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
+                        TThread.CreateAnonymousThread(
+                        procedure
+                        var
+                          Redis: IRedisClient;
+                        begin
+                          try
+                            Redis := TRedisClient.Create(gvRedis_Host, gvRedis_Port);
+                            Redis.Connect;
+                            Redis.LPUSH(gvQueue_name, [lvMdcJson]);
+                          finally
+                            Redis := nil;
+                          end;
+                        end).Start;
+                        gvSucceed:=gvSucceed+1;
+                        frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
+                        log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+{自动首、末件，抽检数据采集
+                        case frm_main.rdg_unproductive.ItemIndex of
+                        2..4:    //首、末件，抽检数据采集
+                          begin
+                            vOInspect := SO(lvDataJson);
+                            with data_module.cds_inspect do
+                              begin
+                                Filter := 'code<>''''';
+                                Filtered := True;
+                                if RecordCount>0 then
+                                  begin
+                                    First;
+                                    while not Eof do
+                                      begin
+                                        Edit;
+                                        FieldByName('value').AsWideString := vOInspect.S[FieldByName('code').AsWideString];
+                                        Post;
+                                        Next;
+                                      end;
+                                  end;
+                                Filtered := False;
+                              end;
+                            frm_Inspect.Show;
+                          end;
+                        end;
+}
+                        Operation_check;
+                      except on e:Exception do
+                        begin
+                          Delete;
+                          gvFail:=gvFail+1;
+                          frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
+                          log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
+                        end;
                       end;
-                    end).Start;
-                    gvSucceed:=gvSucceed+1;
-                    frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
-                    log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
-                    Operation_check;
-                    //EnableControls;
-                  except on e:Exception do
-                    begin
-                      Delete;
-                      gvFail:=gvFail+1;
-                      frm_main.lbl_fail_qty.Caption:=inttostr(gvFail);
-                      log(DateTimeToStr(now())+', [INFO] 采集数据失败，插入clientdataset异常，目前总共提交失败'+inttostr(gvSucceed)+'条。');
                     end;
-                  end;
                 end;
+            end
+          else
+            begin
+              log(DateTimeToStr(now())+', [FAIL] 没读到文件内容:'+fvFileName);
             end;
         end;
       2://极柱焊文件
         begin
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
-          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
             begin
-              uvData.Add(uvList[i]);
+              vData.Add(vList[i]);
             end;
-          if uvData.Count>0 then
+          log(DateTimeToStr(now())+', [INFO] 取得文件内容'+vData.Text);
+          if vData.Count>0 then
             begin
               Weld2yield;
               with data_module.cds_mdc do
                 begin
                   try
-                    //DisableControls;
                     Append;
                     for i := 0 to gvHeader_list.Count-1 do
                       begin
                         if gvHeader_list.ValueFromIndex[i]='String' then
-                          FieldByName(gvHeader_list.Names[i]).AsString := uvData.Strings[i]
+                          FieldByName(gvHeader_list.Names[i]).AsWideString := vData.Strings[i]
                         else if gvHeader_list.ValueFromIndex[i]='Float' then
-                          FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(uvData.Strings[i])
+                          FieldByName(gvHeader_list.Names[i]).AsFloat := StrToFloat(vData.Strings[i])
                         else if gvHeader_list.ValueFromIndex[i]='Integer' then
-                          FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(uvData.Strings[i]);
+                          FieldByName(gvHeader_list.Names[i]).AsInteger := StrToInt(vData.Strings[i]);
                       end;
                     Post;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
@@ -1069,8 +1252,33 @@ begin
                     gvSucceed:=gvSucceed+1;
                     frm_main.lbl_send_qty.Caption:=inttostr(gvSucceed);
                     log(DateTimeToStr(now())+', [INFO] 提交redis队列成功，目前总共提交成功'+inttostr(gvSucceed)+'条。');
+{自动首、末件，抽检数据采集
+                    case frm_main.rdg_unproductive.ItemIndex of
+                    2..4:    //首、末件，抽检数据采集
+                      begin
+                        vOInspect := SO(lvDataJson);
+                        with data_module.cds_inspect do
+                          begin
+                            Filter := 'code<>''''';
+                            Filtered := True;
+                            if RecordCount>0 then
+                              begin
+                                First;
+                                while not Eof do
+                                  begin
+                                    Edit;
+                                    FieldByName('value').AsWideString := vOInspect.S[FieldByName('code').AsWideString];
+                                    Post;
+                                    Next;
+                                  end;
+                              end;
+                            Filtered := False;
+                          end;
+                        frm_Inspect.Show;
+                      end;
+                    end;
+}
                     Operation_check;
-                    //EnableControls;
                   except on e:Exception do
                     begin
                       Delete;
@@ -1080,33 +1288,38 @@ begin
                     end;
                   end;
                 end;
+            end
+          else
+            begin
+              log(DateTimeToStr(now())+', [FAIL] 没读到文件内容:'+fvFileName);
             end;
         end;
       3://测试机2文件
         begin
           Sleep (gvDelay);
           vFile := TFileStream.Create(fvFileName, fmOpenRead);
-          uvList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+          vList.LoadFromStream(vFile);  //这与 LoadFromFile的区别很大, 特别是当文件很大的时候
           for i := gvBegin_row-1 to gvEnd_row-1 do
             begin
-              uvData.Add(uvList[i]);
+              vData.Add(vList[i]);
             end;
-          if uvData.Count>0 then
+          log(DateTimeToStr(now())+', [INFO] 取得文件内容'+vData.Text);
+          if vData.Count>0 then
             begin
+              Weld2yield;
               with data_module.cds_mdc do
                 begin
                   try
-                    //DisableControls;
                     Append;
-                    for i := 0 to uvData.Count-1 do
+                    for i := 0 to vData.Count-1 do
                       begin
-                        vP := PosEx(#9,uvData.Strings[i]);
-                        vTest_field := Copy(uvData.Strings[i],1, vP-1);
-                        vTest_value := Copy(uvData.Strings[i],vP+1, Length(uvData.Strings[i]));
+                        vP := PosEx(#9,vData.Strings[i]);
+                        vTest_field := Copy(vData.Strings[i],1, vP-1);
+                        vTest_value := Copy(vData.Strings[i],vP+1, Length(vData.Strings[i]));
                         if vTest_field=gvTest_operator_field then vTest_operator := vTest_value;
                         if vTest_field=gvTest_SN_field then vTest_SN_value := vTest_value;
                         if vTest_field=gvTest_result_field then vTest_result_value := vTest_value;
-                        FieldByName(vTest_field).AsString := vTest_value;
+                        FieldByName(vTest_field).AsWideString := vTest_value;
                       end;
                     Post;
                     if gvTest_operator_field<>'' then  //设置了操作员字段
@@ -1127,7 +1340,6 @@ begin
                       end;
                     lvDataJson := CDS1LineToJson(data_module.cds_mdc);
                     lvMdcJson := EncodeUniCode(MDCEncode(gvApp_code, IntToStr(gvApp_secret), FormatDateTime('yyyy-mm-dd hh:mm:ss',now), vData_type, gvWorkstation_code, gvStaff_code, gvStaff_name, gvProduct_code,'',vTest_SN_value,'',IntToStr(gvMainorder_id), gvMainorder_name, IntToStr(gvWorkorder_id), gvWorkorder_name, lvDataJson));
-                    Weld2yield;
                     TThread.CreateAnonymousThread(
                     procedure
                     var
@@ -1148,26 +1360,51 @@ begin
                       begin
                         if testingRecord(vTest_SN_value, TRUE, vTest_result_value) then
                           begin
-                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clGreen);
                           end
                         else
                           begin
-                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clGreen);
                           end;
                       end
                     else
                       begin
                         if testingRecord(vTest_SN_value, FALSE, vTest_result_value) then
                           begin
-                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据成功，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clRed);
                           end
                         else
                           begin
-                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value);
+                            log(DateTimeToStr(now())+', [INFO] 提交测试机数据失败，序列号：'+vTest_SN_value+'测试值：'+vTest_result_value, clRed);
                           end;
                       end;
+{自动首、末件，抽检数据采集
+                    case frm_main.rdg_unproductive.ItemIndex of
+                    2..4:    //首、末件，抽检数据采集
+                      begin
+                        vOInspect := SO(lvDataJson);
+                        with data_module.cds_inspect do
+                          begin
+                            Filter := 'code<>''''';
+                            Filtered := True;
+                            if RecordCount>0 then
+                              begin
+                                First;
+                                while not Eof do
+                                  begin
+                                    Edit;
+                                    FieldByName('value').AsWideString := vOInspect.S[FieldByName('code').AsWideString];
+                                    Post;
+                                    Next;
+                                  end;
+                              end;
+                            Filtered := False;
+                          end;
+                        frm_Inspect.Show;
+                      end;
+                    end;
+}
                     Operation_check;
-                    //EnableControls;
                   except on e:Exception do
                     begin
                       Delete;
@@ -1177,11 +1414,17 @@ begin
                     end;
                   end;
                 end;
+            end
+          else
+            begin
+              log(DateTimeToStr(now())+', [FAIL] 没读到文件内容:'+fvFileName);
             end;
         end;
     end;
   finally
     vFile.Free;
+    vlist.Destroy;
+    vdata.Destroy;
   end;
 end;
 
@@ -1196,7 +1439,7 @@ begin
           with data_module.cds_workorder do
             begin
               gvProduct_id := FieldByName('product_id').AsInteger;
-              gvProduct_code := FieldByName('product_code').AsString;
+              gvProduct_code := FieldByName('product_code').AsWideString;
               lbl_product_code.Caption := gvProduct_code;
               lbl_todo_qty.Caption := FieldByName('input_qty').AsString;
               // := FieldByName('todo_qty').AsFloat;
@@ -1263,12 +1506,17 @@ end;
 
 procedure Tfrm_main.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  //CanClose := False;
+  CanClose := False;
 end;
 
 procedure Tfrm_main.FormCreate(Sender: TObject);
 begin
   ini_set := TMemIniFile.Create(ChangeFileExt(ParamStr(0), '.ini'), TEncoding.UTF8);
+  //获取INI中的General配置信息
+  gvFirst_count := ini_set.ReadInteger('general', 'first_count', gvFirst_count);
+  gvRandom_count := ini_set.ReadInteger('general', 'random_count', gvRandom_count);
+  gvLast_count := ini_set.ReadInteger('general', 'last_count', gvLast_count);
+
   //获取ini中的server配置信息
   gvUse_Proxy := ini_set.ReadBool('server', 'use_proxy', gvUse_Proxy);
   gvDatabase := ini_set.ReadString('server', 'databse', gvDatabase);
@@ -1321,10 +1569,6 @@ begin
   gvWorkorder_barcode := ini_set.ReadString('job', 'workorder', gvWorkorder_barcode);
   gvDoing_qty := ini_set.ReadInteger('job', 'doing_qty', gvDoing_qty);
 
-  uvDirSpy := TStringList.Create;
-  uvList := TStringList.Create;
-  uvData := TStringList.Create;
-
   //实例化文件监控控件
   OxygenDirectorySpy1 := TOxygenDirectorySpy.Create(Self);
   OxygenDirectorySpy1.WatchSubTree := gvSubfolder;
@@ -1334,6 +1578,7 @@ begin
   lbl_equipment.Caption := '无';
   lbl_line.Caption := '无';
   lbl_station.Caption := '无';
+  SendMessage(lbx_log.Handle, LB_SETHORIZONTALEXTENT, lbx_log.Width + 200, 0);
 end;
 
 procedure Tfrm_main.FormDestroy(Sender: TObject);
@@ -1342,6 +1587,10 @@ begin
   if Length(Trim(gvDatabase))>0 then ini_set.WriteString('server', 'databse', gvDatabase);
   if Length(Trim(gvServer_Host))>0 then ini_set.WriteString('server', 'host', gvServer_Host);
   if gvServer_Port>0 then ini_set.Writeinteger('server', 'port', gvServer_Port);
+  //写入基本设置信息
+  if gvFirst_count>0 then ini_set.Writeinteger('general', 'first_count', gvFirst_count);
+  if gvRandom_count>0 then ini_set.Writeinteger('general', 'random_count', gvRandom_count);
+  if gvLast_count>0 then ini_set.Writeinteger('general', 'last_count', gvLast_count);
   ini_set.UpdateFile;
   ini_set.Destroy;
 end;
@@ -1447,8 +1696,9 @@ begin
   BadmodeCDS;
   MESLineCDS;
   ReplaceWOCDS;
-  StationCDS;
   PrinterCDS;
+  StationCDS;
+  InspectCDS;
   RefreshEquipment;
   RefreshWorkorder;
   RefreshMaterials;
@@ -1463,7 +1713,30 @@ begin
   //测试机不显示料单页签和报工按钮
   tbs_workorder.TabVisible:=Not gvApp_testing;
   spb_submit.Visible:=Not gvApp_testing;
-  if gvApp_testing then lbl_tag_doing_qty.Caption:='已测' else lbl_tag_doing_qty.Caption:='待报：';
+  if gvApp_testing then
+    begin
+      lbl_tag_doing_qty.Caption:='已测：';
+      spb_debug.GroupIndex := 0;
+      spb_debug.Enabled := False;
+      spb_replace.GroupIndex := 0;
+      spb_replace.Enabled := False;
+      spb_first.GroupIndex := 0;
+      spb_random.GroupIndex := 0;
+      spb_random.Enabled := False;
+      spb_last.GroupIndex := 0;
+    end
+  else
+    begin
+      lbl_tag_doing_qty.Caption:='待报：';
+      spb_debug.GroupIndex := 1;
+      spb_debug.Enabled := True;
+      spb_replace.GroupIndex := 1;
+      spb_replace.Enabled := True;
+      spb_first.GroupIndex := 1;
+      spb_random.GroupIndex := 1;
+      spb_random.Enabled := True;
+      spb_last.GroupIndex := 1;
+    end;
   if DirectoryExists(gvData_path) then
      begin
         with OxygenDirectorySpy1 do begin
@@ -1507,9 +1780,9 @@ begin
                             begin
                               Append;
                               FieldByName('mesline_id').AsInteger := vResult.I['mesline_id'];
-                              FieldByName ('mesline_name').AsString := vResult.S['mesline_name'];
-                              FieldByName('mesline_type').AsString := vResult.S['mesline_type'];
-                              FieldByName('stationlist').AsString := vResult.S['stationlist'];
+                              FieldByName ('mesline_name').AsWideString := vResult.S['mesline_name'];
+                              FieldByName('mesline_type').AsWideString := vResult.S['mesline_type'];
+                              FieldByName('stationlist').AsWideString := vResult.S['stationlist'];
                               Post;
                             end;
                         end;
@@ -1585,8 +1858,8 @@ begin
                           vResult := SO(vA[i].AsString);
                           Append;
                           FieldByName('order_id').AsInteger := vResult.I['order_id'];
-                          FieldByName ('order_name').AsString := vResult.S['order_name'];
-                          FieldByName('product_code').AsString := vResult.S['product_code'];
+                          FieldByName ('order_name').AsWideString := vResult.S['order_name'];
+                          FieldByName('product_code').AsWideString := vResult.S['product_code'];
                           FieldByName('input_qty').AsFloat := vResult.C['input_qty'];
                           Post;
                         end;
@@ -1618,20 +1891,23 @@ end;
 procedure Tfrm_main.OxygenDirectorySpy1ChangeDirectory(Sender: TObject; ChangeRecord: TDirectoryChangeRecord);
 var
   vFileName: String;
+  vDirSpy : TStringList;
 begin
-  uvDirSpy.Clear;
-  uvList.Clear;
-  uvData.Clear;
-  log(DateTimeToStr(now())+', [INFO] '+ChangeRecord2String(ChangeRecord));
-  uvDirSpy.Delimiter := '|';
-  uvDirSpy.StrictDelimiter := True;
-  uvDirSpy.DelimitedText := ChangeRecord2String(ChangeRecord);
-  vFileName:=uvDirSpy.Strings[1];
-  //vPath:=ChangeFileExt(ExtractFileName(vFileName),'');
-  if POS(uvDirSpy.Strings[2],gvMonitor_type)>0 then
-    begin
-      Collection_Data(vFileName);
-    end;
+  vDirSpy := TStringList.Create ;
+  try
+    log(DateTimeToStr(now())+', [INFO] '+ChangeRecord2String(ChangeRecord));
+    vDirSpy.Delimiter := '|';
+    vDirSpy.StrictDelimiter := True;
+    vDirSpy.DelimitedText := ChangeRecord2String(ChangeRecord);
+    vFileName:=vDirSpy.Strings[1];
+    //vPath:=ChangeFileExt(ExtractFileName(vFileName),'');
+    if POS(vDirSpy.Strings[2],gvMonitor_type)>0 then
+      begin
+        Collection_Data(vFileName);
+      end;
+  finally
+    vDirSpy.Destroy;
+  end;
 end;
 
 procedure Tfrm_main.spb_debugClick(Sender: TObject);
@@ -1658,48 +1934,100 @@ begin
   else
     if spb_replace.Down then spb_replace.Down := False else spb_replace.Down := True;
 end;
+
 procedure Tfrm_main.spb_firstClick(Sender: TObject);
 begin
-  if gvDoing_qty > 0 then
+  if gvApp_testing then
     begin
-      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做首件！');
-      if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
-      Exit;
-    end;
-  if Validity_check then
-    if spb_first.Down then rdg_unproductive.ItemIndex := 2 else rdg_unproductive.ItemIndex := -1
+      if Validity_check then
+        begin
+          rdg_unproductive.ItemIndex := 2;
+          gvInspect_type := 'firstone';
+          Get_InspectionList;
+          if data_module.cds_inspect.RecordCount>0 then
+            frm_Inspect.Show
+          else
+            begin
+              frm_main.rdg_unproductive.ItemIndex := -1;
+              frm_main.InfoTips('首件检查记录没有设置，请联系管理员',warn);
+            end;
+        end;
+    end
   else
-    if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
+    begin
+      frm_main.lbl_tag_count.Caption:=IntToStr(gvFirst_count);
+      frm_main.lbl_tag_qty.Caption:=IntToStr(uvFirst_count);
+      if gvDoing_qty > 0 then
+        begin
+          frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做首件！');
+          if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
+          Exit;
+        end;
+      if Validity_check then
+        if spb_first.Down then
+          begin
+            rdg_unproductive.ItemIndex := 2;
+            gvInspect_type := 'firstone';
+            Get_InspectionList;
+          end
+        else rdg_unproductive.ItemIndex := -1
+      else
+        if spb_first.Down then spb_first.Down := False else spb_first.Down := True;
+    end;
 end;
 
 procedure Tfrm_main.spb_randomClick(Sender: TObject);
 begin
-  if gvDoing_qty > 0 then
-    begin
-      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做抽检！');
-      if spb_random.Down then spb_random.Down := False else spb_random.Down := True;
-      Exit;
-    end;
   if Validity_check then
-    if spb_random.Down then rdg_unproductive.ItemIndex := 3 else rdg_unproductive.ItemIndex := -1
+    if spb_random.Down then
+      begin
+        rdg_unproductive.ItemIndex := 3;
+        gvInspect_type := 'random';
+        Get_InspectionList;
+      end
+    else rdg_unproductive.ItemIndex := -1
   else
     if spb_random.Down then spb_random.Down := False else spb_random.Down := True;
 end;
 
 procedure Tfrm_main.spb_lastClick(Sender: TObject);
 begin
-  if gvDoing_qty > 0 then
+  if gvApp_testing then
     begin
-      frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做末件！');
-      if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
-      Exit;
-    end;
-  if Validity_check then
-    if spb_last.Down then rdg_unproductive.ItemIndex := 4 else rdg_unproductive.ItemIndex := -1
+      if Validity_check then
+        begin
+          rdg_unproductive.ItemIndex := 4;
+          gvInspect_type := 'lastone';
+          Get_InspectionList;
+          if data_module.cds_inspect.RecordCount>0 then
+            frm_Inspect.Show
+          else
+            begin
+              frm_main.rdg_unproductive.ItemIndex := -1;
+              frm_main.InfoTips('末件检查记录没有设置，请联系管理员',warn);
+            end;
+        end;
+    end
   else
-    if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
+    begin
+      if gvDoing_qty > 0 then
+        begin
+          frm_main.InfoTips('待报工数量为'+IntToStr(gvDoing_qty)+'，请先报工。'+#13+'再做末件！');
+          if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
+          Exit;
+        end;
+      if Validity_check then
+        if spb_last.Down then
+          begin
+            rdg_unproductive.ItemIndex := 4;
+            gvInspect_type := 'lastone';
+            Get_InspectionList;
+          end
+        else rdg_unproductive.ItemIndex := -1
+      else
+        if spb_last.Down then spb_last.Down := False else spb_last.Down := True;
+    end;
 end;
-
 
 procedure Tfrm_main.spb_refreshClick(Sender: TObject);
 begin
@@ -1722,7 +2050,6 @@ begin
   else
     begin
       frm_main.InfoTips(gvWorkorder_name+'工单开工失败:'+vO.S['result.message']);
-      //Application.MessageBox(PChar(vO.S['result.message']),'错误',MB_ICONERROR);
       log(DateTimeToStr(now())+', [INFO] '+gvWorkorder_name+'工单开工失败:'+vO.S['result.message']);
     end;
 end;
@@ -1757,15 +2084,22 @@ begin
                       Append;
                       vResult := SO(vA[i].AsString);
                       FieldByName('badmode_id').AsInteger := vResult.I['badmode_id'];
-                      FieldByName('badmode_name').AsString := vResult.S['badmode_name'];
+                      FieldByName('badmode_name').AsWideString := vResult.S['badmode_name'];
                       FieldByName('badmode_qty').AsInteger := 0;
                       Post;
                     end;
                   FieldByName('badmode_name').ReadOnly := True;
                   Aggregates.Items[0].OnUpdate:=data_module.cds_badmodeAggregates0Update;
                 end;
+            end
+          else
+            begin
+              with data_module.cds_badmode do
+                begin
+                  EmptyDataSet;
+                end;
+              log(DateTimeToStr(now())+', [INFO]不良模式记录为空！');
             end;
-          log(DateTimeToStr(now())+', [INFO]获取到不良模式');
         end
       else
         begin
@@ -1773,6 +2107,7 @@ begin
             begin
               EmptyDataSet;
             end;
+          log(DateTimeToStr(now())+', [INFO]获取不良模式失败：'+vO.S['result.message']);
         end;
           frm_finish.lbl_product_code.Caption := gvProduct_code;
           frm_finish.lbl_doing_qty.Caption := IntToStr(gvDoing_qty);

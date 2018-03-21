@@ -10,9 +10,11 @@ type
   Tfrm_container = class(TForm)
     pnl_tips: TPanel;
     tim_cleartips: TTimer;
+    lbl_tag_tips: TLabel;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormShow(Sender: TObject);
     procedure tim_cleartipsTimer(Sender: TObject);
+    procedure pnl_tipsDblClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -97,6 +99,11 @@ begin
   pnl_tips.Color := clInfoBk;
   pnl_tips.Font.Style := pnl_tips.Font.Style + [fsBold];
   pnl_tips.Caption := '请扫描容器条码！';
+end;
+
+procedure Tfrm_container.pnl_tipsDblClick(Sender: TObject);
+begin
+  uvInput := '';
 end;
 
 procedure Tfrm_container.tim_cleartipsTimer(Sender: TObject);

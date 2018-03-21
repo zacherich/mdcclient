@@ -23,6 +23,8 @@ type
     cds_replacewo: TClientDataSet;
     cds_printer: TClientDataSet;
     dsc_printer: TDataSource;
+    cds_inspect: TClientDataSet;
+    dsc_inspect: TDataSource;
     procedure cds_mdcNewRecord(DataSet: TDataSet);
     procedure cds_badmodeAggregates0Update(Agg: TAggregate);
   private

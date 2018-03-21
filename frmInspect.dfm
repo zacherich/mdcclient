@@ -1,0 +1,179 @@
+object frm_Inspect: Tfrm_Inspect
+  Left = 0
+  Top = 0
+  BorderIcons = []
+  ClientHeight = 471
+  ClientWidth = 490
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -16
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  FormStyle = fsStayOnTop
+  KeyPreview = True
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  OnKeyPress = FormKeyPress
+  OnShow = FormShow
+  DesignSize = (
+    490
+    471)
+  PixelsPerInch = 96
+  TextHeight = 19
+  object lbl_tag_wo: TLabel
+    Left = 28
+    Top = 2
+    Width = 66
+    Height = 25
+    Anchors = []
+    Caption = #24037#21333#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ExplicitTop = 4
+  end
+  object lbl_tag_product_code: TLabel
+    Left = 28
+    Top = 34
+    Width = 66
+    Height = 25
+    Anchors = []
+    Caption = #20135#21697#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clHighlight
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ExplicitTop = 40
+  end
+  object lbl_wo: TLabel
+    Left = 100
+    Top = 1
+    Width = 70
+    Height = 25
+    Anchors = []
+    Caption = 'lbl_wo'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ExplicitTop = 3
+  end
+  object lbl_product_code: TLabel
+    Left = 100
+    Top = 35
+    Width = 181
+    Height = 25
+    Anchors = []
+    Caption = 'lbl_product_code'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clHighlight
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ExplicitTop = 41
+  end
+  object lbl_tag_input: TLabel
+    Left = 326
+    Top = 6
+    Width = 80
+    Height = 19
+    Anchors = []
+    Caption = #35745#21010#25968#37327#65306
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ExplicitTop = 8
+  end
+  object lbl_input: TLabel
+    Left = 404
+    Top = 6
+    Width = 62
+    Height = 19
+    Anchors = []
+    Caption = 'lbl_input'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlack
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ExplicitTop = 8
+  end
+  object spb_save: TSpeedButton
+    Left = 322
+    Top = 433
+    Width = 77
+    Height = 30
+    Caption = #20445#23384
+    OnClick = spb_saveClick
+  end
+  object lbl_tag_fixture: TLabel
+    Left = 9
+    Top = 437
+    Width = 48
+    Height = 19
+    Caption = #22841#20855#65306
+  end
+  object SpeedButton1: TSpeedButton
+    Left = 405
+    Top = 433
+    Width = 77
+    Height = 30
+    Caption = #20851#38381
+    OnClick = SpeedButton1Click
+  end
+  object lbl_tag_result: TLabel
+    Left = 326
+    Top = 41
+    Width = 80
+    Height = 19
+    Caption = #26816#27979#32467#26524#65306
+  end
+  object lbl_result: TLabel
+    Left = 405
+    Top = 41
+    Width = 77
+    Height = 19
+    Caption = 'lbl_result'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object dbg_inspect: TDBGrid
+    Left = 3
+    Top = 66
+    Width = 484
+    Height = 361
+    Options = [dgEditing, dgAlwaysShowEditor, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
+    TabOrder = 0
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -16
+    TitleFont.Name = 'Tahoma'
+    TitleFont.Style = []
+    OnDrawColumnCell = dbg_inspectDrawColumnCell
+    OnKeyDown = dbg_inspectKeyDown
+  end
+  object edt_fixture: TEdit
+    Left = 63
+    Top = 434
+    Width = 235
+    Height = 27
+    TabOrder = 1
+  end
+end

@@ -1,7 +1,7 @@
 object data_module: Tdata_module
   OldCreateOrder = False
-  Height = 344
-  Width = 395
+  Height = 426
+  Width = 428
   object cds_mdc: TClientDataSet
     Aggregates = <>
     Params = <>
@@ -113,5 +113,17 @@ object data_module: Tdata_module
     DataSet = cds_printer
     Left = 320
     Top = 216
+  end
+  object cds_inspect: TClientDataSet
+    Aggregates = <>
+    AggregatesActive = True
+    Params = <>
+    Left = 80
+    Top = 288
+  end
+  object dsc_inspect: TDataSource
+    DataSet = cds_inspect
+    Left = 80
+    Top = 352
   end
 end

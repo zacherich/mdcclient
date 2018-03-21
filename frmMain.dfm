@@ -3,7 +3,7 @@ object frm_main: Tfrm_main
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
-  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.4'
+  Caption = #23433#36153#35834#23425#24503'MES  V1.0.1.8'
   ClientHeight = 671
   ClientWidth = 523
   Color = clBtnFace
@@ -299,7 +299,7 @@ object frm_main: Tfrm_main
     Top = 241
     Width = 523
     Height = 430
-    ActivePage = tbs_workorder
+    ActivePage = tbs_collection
     Align = alClient
     TabOrder = 1
     object tbs_workorder: TTabSheet
@@ -533,9 +533,14 @@ object frm_main: Tfrm_main
         Top = 0
         Width = 515
         Height = 396
-        Style = lbVirtual
         Align = alClient
-        ItemHeight = 18
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ItemHeight = 14
+        ParentFont = False
         TabOrder = 0
       end
     end
@@ -726,7 +731,7 @@ object frm_main: Tfrm_main
           ParentFont = False
         end
         object spb_submit: TSpeedButton
-          Left = 340
+          Left = 365
           Top = 6
           Width = 72
           Height = 22
@@ -770,7 +775,7 @@ object frm_main: Tfrm_main
           OnClick = spb_submitClick
         end
         object spb_refresh: TSpeedButton
-          Left = 418
+          Left = 436
           Top = 6
           Width = 73
           Height = 22
@@ -834,7 +839,7 @@ object frm_main: Tfrm_main
           ParentFont = False
         end
         object spb_start: TSpeedButton
-          Left = 418
+          Left = 292
           Top = 6
           Width = 73
           Height = 22
@@ -981,6 +986,20 @@ object frm_main: Tfrm_main
           Font.Style = []
           ParentFont = False
           OnClick = spb_replaceClick
+        end
+        object lbl_tag_qty: TLabel
+          Left = 132
+          Top = 108
+          Width = 9
+          Height = 19
+          Caption = '0'
+        end
+        object lbl_tag_count: TLabel
+          Left = 134
+          Top = 71
+          Width = 9
+          Height = 19
+          Caption = '0'
         end
       end
     end

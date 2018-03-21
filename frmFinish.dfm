@@ -181,12 +181,15 @@ object frm_finish: Tfrm_finish
     Width = 448
     Height = 305
     DataSource = data_module.dsc_badmode
+    Options = [dgEditing, dgAlwaysShowEditor, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
     TabOrder = 0
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
     TitleFont.Height = -16
     TitleFont.Name = 'Tahoma'
     TitleFont.Style = []
+    OnDrawColumnCell = dbg_badmodeDrawColumnCell
+    OnKeyDown = dbg_badmodeKeyDown
   end
   object edt_submit: TEdit
     Left = 245

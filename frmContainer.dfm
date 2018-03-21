@@ -35,15 +35,29 @@ object frm_container: Tfrm_container
     ParentBackground = False
     ParentFont = False
     TabOrder = 0
-    ExplicitLeft = 88
-    ExplicitTop = 8
-    ExplicitWidth = 185
-    ExplicitHeight = 41
+    OnDblClick = pnl_tipsDblClick
+    object lbl_tag_tips: TLabel
+      Left = 1
+      Top = 69
+      Width = 411
+      Height = 19
+      Align = alBottom
+      Alignment = taRightJustify
+      Caption = #25195#25551#27809#21453#24212#65292#21452#20987#20877#35797
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clRed
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+      OnDblClick = pnl_tipsDblClick
+      ExplicitLeft = 242
+      ExplicitWidth = 170
+    end
   end
   object tim_cleartips: TTimer
     Enabled = False
     OnTimer = tim_cleartipsTimer
-    Left = 376
-    Top = 48
+    Left = 384
   end
 end

@@ -12,8 +12,9 @@ uses
   procedure BadmodeCDS;
   procedure MESLineCDS;
   procedure ReplaceWOCDS;
-  procedure StationCDS;
   procedure PrinterCDS;
+  procedure StationCDS;
+  procedure InspectCDS;
   Procedure DataCollectionCDS(const fHeadlines, fPrimary_key: string; const fDeli: Char);
   function GetFileType(FileName:String):string;
   function GetLastLine(fName : String) : String;
@@ -59,6 +60,9 @@ uses
   function workticket_FINISH(CONST fvWorkticket_id, fvApp_id: Integer; CONST fvCommit_qty : Currency; CONST fvBadmode_lines: String; CONST fvContainer_id: Integer = 0): String;   //工票工单完工
   function Virtual_FINISH(CONST  fvProduct_id: Integer; CONST fvOutput_qty : Currency; CONST fvBadmode_lines: String = '[]'): String;   //子工单虚拟建完工
   function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
+  function inspectionList : String;   //获取产品检查清单
+  function inspectionValue(CONST fvParameters, fvTesttype, fvInstrument, fvFixture : WideString) : String;   //提交产品检验值
+
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
@@ -132,6 +136,8 @@ var
   gvContainer_id : Integer = 0;
   gvContainer_code : String;
   gvContainer_name : String;
+  gvFin_product_id : Integer = 0;
+  gvFin_product_code : String;
   gvProduct_id : Integer = 0;
   gvProduct_code : String;
   gvLastworkcenter : Bool;
@@ -143,6 +149,12 @@ var
   gvWeld_count : Integer = 0;
   gvDoing_qty : Integer = 0;
   gvConsumelist : String;
+  //首、末件、抽检
+  gvProducttestid : Integer = 0;
+  gvFirst_count  : Integer = 2;
+  gvRandom_count  : Integer = 1;
+  gvLast_count  : Integer = 1;
+  gvInspect_type : WideString;
   //统计变量
   gvWorkorder_rowno : Integer = 0;
   gvSucceed : Integer = 0;
@@ -151,7 +163,7 @@ var
 implementation
 
 uses
-  dataModule, frmMain, frmSet, frmFinish, frmMESLine, frmReplaceWO;
+  dataModule, frmMain, frmSet, frmFinish, frmMESLine, frmReplaceWO, frmInspect;
 
 function EncodeUniCode(Str:WideString):string; //字符串－>PDU
 var
@@ -510,6 +522,63 @@ begin
     end;
 end;
 
+procedure InspectCDS;
+var i: Integer;
+begin
+  with data_module.cds_inspect do
+    begin
+      FieldDefs.Clear;
+      Close;
+      FieldDefs.Add('id', ftInteger, 0, True);               //检测参数ID
+      FieldDefs.Add('name', ftWideString, 50, True);         //检测参数名称
+      FieldDefs.Add('type', ftWideString, 50, True);         //填入参数字段类型
+//      FieldDefs.Add('value', ftWideString, 50, True);
+//      FieldDefs.Add('minvalue', ftWideString, 50, True);
+//      FieldDefs.Add('maxvalue', ftWideString, 50, True);
+      FieldDefs.Add('value', ftWideString, 50);               //录入实际检测参数值
+      FieldDefs.Add('code', ftWideString, 30);                //设备采集字段名称
+      FieldDefs.Add('note', ftWideString, 50);                //录入的备注信息
+      IndexDefs.Add('idx_id', 'id', [IxPrimary]);
+      IndexDefs.Add('idx_name', 'name', []);
+      CreateDataSet;
+      Open;
+    end;
+  frm_Inspect.dbg_inspect.DataSource := data_module.dsc_inspect;
+  for i:=0 to frm_Inspect.dbg_inspect.Columns.Count-1 do
+    begin
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='id' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Visible := False;
+        end;
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='name' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Width := 120;
+          frm_Inspect.dbg_inspect.Columns[i].Title.Caption := '参数名称';
+        end;
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='type' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Width := 70;
+          frm_Inspect.dbg_inspect.Columns[i].Title.Caption := '数据类型';
+        end;
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='value' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Width := 100;
+          frm_Inspect.dbg_inspect.Columns[i].Title.Caption := '参数数值';
+        end;
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='code' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Width := 70;
+          frm_Inspect.dbg_inspect.Columns[i].Title.Caption := '采集字段';
+        end;
+      if frm_Inspect.dbg_inspect.Columns[i].FieldName='note' then
+        begin
+          frm_Inspect.dbg_inspect.Columns[i].Width := 100;
+          frm_Inspect.dbg_inspect.Columns[i].Title.Caption := '备注';
+        end;
+      frm_Inspect.dbg_inspect.Columns[i].Title.Alignment := taCenter;
+    end;
+end;
+
 function GetFileType(FileName:String):string;
 var
   myFile:TMemoryStream;
@@ -540,16 +609,16 @@ function GetLastLine(fName : String) : String;
 var vFile : TFileStream;
     vlist : TStringList;
 begin
-      vlist := TStringList.Create ;
-      vFile := TFileStream.Create(fName, fmOpenRead);
-    try
-      vFile.Seek(-1024, soFromEnd);
-      vlist.LoadFromStream(vFile);  // 这与 LoadFromFile的区别很大, 特别是当文件很大的时候
-      result := vlist.Strings[vlist.count-1];
-    finally
-      FreeAndNil(vFile);
-      vlist.Destroy;
-    end;
+  vlist := TStringList.Create ;
+  vFile := TFileStream.Create(fName, fmOpenRead);
+  try
+    vFile.Seek(-1024, soFromEnd);
+    vlist.LoadFromStream(vFile);  // 这与 LoadFromFile的区别很大, 特别是当文件很大的时候
+    result := vlist.Strings[vlist.count-1];
+  finally
+    FreeAndNil(vFile);
+    vlist.Destroy;
+  end;
 end;
 
 function GetCodeName(fvStart,fvEnd,fvInputStr:String;fvTag:Shortint):String;
@@ -730,8 +799,8 @@ Procedure Log(Str:String; Color: TColor);//记录日志文件
 var
   vLogPath,vLogFile:String;
 begin
-  frm_main.lbx_log.Items.AddObject(Str, Pointer(Color));
-  frm_main.lbx_log.ItemIndex := frm_main.lbx_log.Items.Count -1;
+  frm_main.lbx_Log.Items.AddObject(Str, Pointer(Color));
+  frm_main.lbx_Log.ItemIndex := frm_main.lbx_Log.Items.Count -1;
   vLogPath := ExtractFilePath(paramstr(0)) + 'Log\\';
   vLogFile := FormatDateTime('YYYYMMDD',now)+'.txt';//每天记录一个文件
   if (not DirectoryExists(vLogPath)) then
@@ -793,7 +862,7 @@ begin
   vSession := TIdHttp.Create(nil);
 
   try
-    vSendStream := TStringStream.Create(vO.AsString);
+    vSendStream := TStringStream.Create(vO.AsString,TEncoding.UTF8);
     vSession.Request.ContentType := 'application/json';
     Result := vSession.Post(fvURL, vSendStream);
   finally
@@ -975,7 +1044,7 @@ end;
 
 function getFeedMaterials : String;  //查询设备上料信息
 begin
-  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_workstation_materiallist", "'+ gvApp_code +'"]');
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "get_workstation_materiallist", "'+ gvApp_code +'", ' + IntToStr(gvWorkorder_id) +']')
 end;
 
 function getWorkordConsume(CONST fvWorkorder_id, fvWorkcenter_id: Integer): String;   //工票工单开工
@@ -1058,8 +1127,18 @@ function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : B
 var
   vO : ISuperObject;
 begin
-  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_functiontest", "'+ gvApp_code +'", "'+ fvSerialnumber +'", '+ BoolToStr(fvOperation_pass) +', "'+ fvOperate_result+'"]'));
-  Result := vO.B['result.success']
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_functiontest", "'+ gvApp_code +'", "'+ fvSerialnumber +'", '+ BoolToStr(fvOperation_pass) +', "'+ fvOperate_result +'"]'));
+  Result := vO.B['result.success'];
+end;
+
+function inspectionList : String;   //获取产品检查清单
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "loading_producttest_onclient", '+ IntToStr(gvFin_product_id) +', '+ IntToStr(gvWorkstation_id) +', "'+ gvInspect_type +'"]');
+end;
+
+function inspectionValue(CONST fvParameters, fvTesttype, fvInstrument, fvFixture : WideString) : String;   //提交产品检验值
+begin
+  Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_producttest_onclient", ' + IntToStr(gvApp_id) + ', ' + IntToStr(gvProducttestid) +', '+ fvParameters +', "'+ fvTesttype +'", '+ IntToStr(gvWorkorder_id) + ', "' + fvInstrument +'", "'+ fvFixture +'"]');
 end;
 
 end.

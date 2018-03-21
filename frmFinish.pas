@@ -27,6 +27,10 @@ type
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure edt_submitChange(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure dbg_badmodeDrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure dbg_badmodeKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
   public
@@ -94,6 +98,23 @@ begin
   end;
 end;
 
+procedure Tfrm_finish.dbg_badmodeDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn; State: TGridDrawState);
+begin
+  if Column.FieldName='badmode_name' then
+    begin
+      dbg_badmode.Canvas.Brush.color:=clInfoBk;//当前选中行的偶数列显示红色
+    end;
+  dbg_badmode.DefaultDrawColumnCell(Rect,DataCol,Column,State);
+end;
+
+procedure Tfrm_finish.dbg_badmodeKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if ((Key=VK_DOWN)or(Key=VK_TAB)) and (dbg_badmode.DataSource.DataSet.RecNo>=dbg_badmode.DataSource.DataSet.RecordCount) then
+    key:=0;
+end;
+
 procedure Tfrm_finish.edt_submitChange(Sender: TObject);
 begin
   if edt_submit.Text='' then edt_submit.Text := '0';
@@ -112,7 +133,7 @@ end;
 
 procedure Tfrm_finish.FormKeyPress(Sender: TObject; var Key: Char);
 begin
-if key=#13 then sbt_submit.Click;
+  if key=#13 then sbt_submit.Click;
 end;
 
 procedure Tfrm_finish.FormShow(Sender: TObject);
@@ -138,7 +159,6 @@ begin
   if frm_finish.lbl_bad_qty.Caption<>'0' then   //存在有不良模式,生产不良模式数组
     begin
       vBadmode_lines := BadmodeToJson(data_module.cds_badmode);
-      log(vBadmode_lines);
     end
   else    //没有不良返回空数组
     begin
@@ -146,10 +166,10 @@ begin
     end;
   if gvline_type='flowing' then    //主线上
     begin
-      log(DateTimeToStr(now())+', [INFO]开始调用报工方法');
+      //log(DateTimeToStr(now())+', [INFO]开始调用报工方法');
       vO := SO(Virtual_FINISH(gvProduct_id, gvDoing_qty, vBadmode_lines));
-      vS := vO.AsString;
-      log(DateTimeToStr(now())+', [INFO]完成调用报工方法');
+      //vS := vO.AsString;
+      //log(DateTimeToStr(now())+', [INFO]完成调用报工方法,返回值：'+vS);
       if vO.B['result.success'] then  //报工成功
         begin
           frm_main.lbl_done_qty.Caption:=IntToStr(StrToInt(frm_main.lbl_done_qty.Caption)+gvDoing_qty);
@@ -160,17 +180,17 @@ begin
           lbl_good_qty.Caption:=IntToStr(gvDoing_qty);
           lbl_bad_qty.Caption:=IntToStr(gvDoing_qty);
           frm_main.lbl_doing_qty.Caption:=IntToStr(gvDoing_qty);
-          log(DateTimeToStr(now())+', [INFO]开始刷新工单');
-          RefreshWorkorder;
-          log(DateTimeToStr(now())+', [INFO]完成刷新工单');
-          RefreshMaterials(gvConsumelist);
-          log(DateTimeToStr(now())+', [INFO]完成刷新原材料');
           frm_finish.Hide;
+          //log(DateTimeToStr(now())+', [INFO]开始刷新工单');
+          RefreshWorkorder;
+          //log(DateTimeToStr(now())+', [INFO]完成刷新工单');
+          RefreshMaterials(gvConsumelist);
+          //log(DateTimeToStr(now())+', [INFO]完成刷新原材料');
         end
       else
         begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
-           Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
+          Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
         end;
     end
   else if gvline_type='station' then    //工作站
@@ -194,16 +214,15 @@ begin
           ini_set.WriteString('job', 'workorder', '');
           ini_set.WriteInteger('job', 'doing_qty', gvDoing_qty);
           ini_set.UpdateFile;
+          frm_finish.Hide;
           RefreshWorkorder;
           RefreshMaterials;
-          frm_finish.Hide;
         end
       else
         begin
           log(DateTimeToStr(now())+', [ERROR]  工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']);
           Application.MessageBox(PChar('工单号【'+gvWorkorder_name+'】报工失败，错误信息：'+vO.S['result.message']+'！'),'错误',MB_ICONERROR);
         end;
-
     end;
 end;
 

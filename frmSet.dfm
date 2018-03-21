@@ -30,7 +30,7 @@ object frm_set: Tfrm_set
     Top = 0
     Width = 746
     Height = 527
-    ActivePage = tbs_collection
+    ActivePage = tbs_base
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -702,12 +702,78 @@ object frm_set: Tfrm_set
     object tbs_base: TTabSheet
       Caption = #22522#26412#35774#32622
       ImageIndex = 2
+      object lbl_tag_printer: TLabel
+        Left = 16
+        Top = 95
+        Width = 102
+        Height = 19
+        Caption = #40664#35748#25171#21360#26631#31614':'
+      end
       object dlc_printer: TDBLookupComboBox
-        Left = 64
-        Top = 27
+        Left = 124
+        Top = 92
         Width = 193
         Height = 27
         TabOrder = 0
+      end
+      object gpb_unproductive: TGroupBox
+        Left = 16
+        Top = 8
+        Width = 705
+        Height = 65
+        Caption = #39318#12289#26411#20214#21644#25277#26816#35774#32622
+        TabOrder = 1
+        object lbl_tag_first_count: TLabel
+          Left = 45
+          Top = 27
+          Width = 80
+          Height = 19
+          Caption = #39318#20214#20010#25968#65306
+        end
+        object lbl_tag_random_count: TLabel
+          Left = 277
+          Top = 27
+          Width = 80
+          Height = 19
+          Caption = #25277#26816#20010#25968#65306
+        end
+        object lbl_tag_last_count: TLabel
+          Left = 506
+          Top = 27
+          Width = 80
+          Height = 19
+          Caption = #26411#20214#20010#25968#65306
+        end
+        object spn_first_count: TSpinEdit
+          Left = 131
+          Top = 24
+          Width = 65
+          Height = 29
+          MaxValue = 5
+          MinValue = 1
+          TabOrder = 0
+          Value = 1
+        end
+        object spn_random_count: TSpinEdit
+          Left = 363
+          Top = 24
+          Width = 65
+          Height = 29
+          MaxValue = 5
+          MinValue = 1
+          TabOrder = 1
+          Value = 1
+        end
+        object spn_last_count: TSpinEdit
+          Left = 592
+          Top = 24
+          Width = 65
+          Height = 29
+          MaxValue = 5
+          MinValue = 1
+          TabOrder = 2
+          Value = 1
+        end
       end
     end
   end

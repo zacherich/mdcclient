@@ -112,8 +112,8 @@ object frm_ReplaceWO: Tfrm_ReplaceWO
     OnClick = spb_default_woClick
   end
   object dbg_replacewo: TDBGrid
-    Left = 5
-    Top = 104
+    Left = 4
+    Top = 105
     Width = 449
     Height = 276
     Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]

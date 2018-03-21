@@ -10,10 +10,10 @@ uses
   frmFinish in 'frmFinish.pas' {frm_finish},
   frmContainer in 'frmContainer.pas' {frm_container},
   frmReplaceWO in 'frmReplaceWO.pas' {frm_ReplaceWO},
-  frmMESLine in 'frmMESLine.pas' {frm_MESLine};
+  frmMESLine in 'frmMESLine.pas' {frm_MESLine},
+  frmInspect in 'frmInspect.pas' {frm_Inspect};
 
 {$R *.res}
-
 
 begin
   Application.MainFormOnTaskbar := True;
@@ -26,6 +26,7 @@ begin
   Application.CreateForm(Tfrm_container, frm_container);
   Application.CreateForm(Tfrm_ReplaceWO, frm_ReplaceWO);
   Application.CreateForm(Tfrm_MESLine, frm_MESLine);
+  Application.CreateForm(Tfrm_Inspect, frm_Inspect);
   if frmLogin.Login() then  //呼叫登录窗口：就这一行，简单吧！
     Application.Run;
 end.

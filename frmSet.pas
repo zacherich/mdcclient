@@ -77,6 +77,14 @@ type
     edt_operator_field: TEdit;
     tbs_base: TTabSheet;
     dlc_printer: TDBLookupComboBox;
+    lbl_tag_printer: TLabel;
+    gpb_unproductive: TGroupBox;
+    spn_first_count: TSpinEdit;
+    spn_random_count: TSpinEdit;
+    spn_last_count: TSpinEdit;
+    lbl_tag_first_count: TLabel;
+    lbl_tag_random_count: TLabel;
+    lbl_tag_last_count: TLabel;
     procedure lbl_data_pathClick(Sender: TObject);
     procedure lbl_template_fileClick(Sender: TObject);
     procedure spn_header_lineChange(Sender: TObject);
@@ -402,6 +410,14 @@ begin
     gvPrinter_name := dlc_printer.Text;
     ini_set.WriteString('profile', 'printer_name', gvPrinter_name);
 
+    //基本信息保存
+    gvFirst_count := spn_first_count.Value;
+    ini_set.Writeinteger('general', 'first_count', gvFirst_count);
+    gvRandom_count := spn_random_count.Value;
+    ini_set.Writeinteger('general', 'random_count', gvRandom_count);
+    gvLast_count := spn_last_count.Value;
+    ini_set.Writeinteger('general', 'last_count', gvLast_count);
+
     ini_set.UpdateFile;
     //设备信息保存
     if Application.MessageBox(PChar('设备信息、数据采集配置成功,是否保存?'),'提示',MB_OKCANCEL)=IDOK then
@@ -552,6 +568,10 @@ begin
             end;
         end;
     end;
+  //显示基本设置
+  spn_first_count.Value := gvFirst_count;
+  spn_random_count.Value := gvRandom_count;
+  spn_last_count.Value := gvLast_count;
   queryPrinter;
 end;
 
