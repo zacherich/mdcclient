@@ -305,6 +305,10 @@ object frm_main: Tfrm_main
     object tbs_workorder: TTabSheet
       Caption = #26009#21333#20449#24687
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Splitter1: TSplitter
         Left = 0
         Top = 235
@@ -355,49 +359,44 @@ object frm_main: Tfrm_main
             Left = 1
             Top = 1
             Width = 64
-            Height = 17
+            Height = 19
             Align = alLeft
             Caption = #24037#21333#20449#24687
             Color = clSkyBlue
             ParentColor = False
             Transparent = False
-            ExplicitHeight = 19
           end
           object lbl_wo_rows: TLabel
             Left = 477
             Top = 1
             Width = 35
-            Height = 17
+            Height = 19
             Align = alRight
             Caption = ' 0 '#34892
-            ExplicitHeight = 19
           end
           object lbl_tag_wo_rows: TLabel
             Left = 461
             Top = 1
             Width = 16
-            Height = 17
+            Height = 19
             Align = alRight
             Caption = #20849
-            ExplicitHeight = 19
           end
           object lbl_wo_row: TLabel
             Left = 442
             Top = 1
             Width = 19
-            Height = 17
+            Height = 19
             Align = alRight
             Caption = ' 0 '
-            ExplicitHeight = 19
           end
           object lbl_tag_wo_row: TLabel
             Left = 426
             Top = 1
             Width = 16
-            Height = 17
+            Height = 19
             Align = alRight
             Caption = #31532
-            ExplicitHeight = 19
           end
         end
       end
@@ -411,14 +410,13 @@ object frm_main: Tfrm_main
         object lbl_tag_materiel: TLabel
           Left = 1
           Top = 1
-          Width = 513
+          Width = 80
           Height = 19
           Align = alTop
           Caption = #21407#26448#26009#20449#24687
           Color = clMoneyGreen
           ParentColor = False
           Transparent = False
-          ExplicitWidth = 80
         end
         object dbg_materiel: TDBGrid
           Left = 1
@@ -528,6 +526,10 @@ object frm_main: Tfrm_main
     object tbs_log: TTabSheet
       Caption = #31995#32479#26085#24535
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lbx_log: TListBox
         Left = 0
         Top = 0
@@ -1011,11 +1013,15 @@ object frm_main: Tfrm_main
       Caption = 'tbs_tip'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lbl_tip: TLabel
         Left = 0
         Top = 0
-        Width = 515
-        Height = 129
+        Width = 72
+        Height = 33
         Align = alClient
         Alignment = taCenter
         Caption = 'lbl_tip'
@@ -1027,8 +1033,6 @@ object frm_main: Tfrm_main
         ParentFont = False
         Layout = tlCenter
         WordWrap = True
-        ExplicitWidth = 72
-        ExplicitHeight = 33
       end
       object rdg_unproductive: TRadioGroup
         Left = 315

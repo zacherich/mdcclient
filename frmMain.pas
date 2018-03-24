@@ -1762,56 +1762,48 @@ var
 begin
   if gvDoing_qty = 0 then
     begin
-      if gvline_type='flowing' then    //主线上
+      vO := SO(queryMESLine);
+      if vO.B['result.success'] then  //获取产线信息成功
         begin
-          vO := SO(queryMESLine);
-          if vO.B['result.success'] then  //获取产线信息成功
+          vA := vO.A['result.records'];
+          if vA.Length>0 then
             begin
-              vA := vO.A['result.records'];
-              if vA.Length>0 then
+              with data_module.cds_mesline do
                 begin
-                  with data_module.cds_mesline do
+                  EmptyDataSet;
+                  for i := 0 to vA.Length-1 do
                     begin
-                      EmptyDataSet;
-                      for i := 0 to vA.Length-1 do
+                      vResult := SO(vA[i].AsString);
+                      if vResult.S['mesline_type']=gvline_type then
                         begin
-                          vResult := SO(vA[i].AsString);
-                          if vResult.S['mesline_type']='flowing' then
-                            begin
-                              Append;
-                              FieldByName('mesline_id').AsInteger := vResult.I['mesline_id'];
-                              FieldByName ('mesline_name').AsWideString := vResult.S['mesline_name'];
-                              FieldByName('mesline_type').AsWideString := vResult.S['mesline_type'];
-                              FieldByName('stationlist').AsWideString := vResult.S['stationlist'];
-                              Post;
-                            end;
+                          Append;
+                          FieldByName('mesline_id').AsInteger := vResult.I['mesline_id'];
+                          FieldByName ('mesline_name').AsWideString := vResult.S['mesline_name'];
+                          FieldByName('mesline_type').AsWideString := vResult.S['mesline_type'];
+                          FieldByName('stationlist').AsWideString := vResult.S['stationlist'];
+                          Post;
                         end;
-                      frm_MESLine.dlc_mesline.KeyValue := gvMESLine_id;
                     end;
-                  frm_MESLine.lbl_line.Caption := gvMESLine_name;
-                  frm_MESLine.lbl_station.Caption := gvWorkstation_name;
-                  frm_MESLine.Show;
-                end
-              else
-                begin
-                  frm_main.InfoTips('MES还没有生产线，请联系管理员');
-                  log(DateTimeToStr(now())+', [INFO] MES还没有生产线，请联系管理员');
+                  frm_MESLine.dlc_mesline.KeyValue := gvMESLine_id;
                 end;
+              frm_MESLine.lbl_line.Caption := gvMESLine_name;
+              frm_MESLine.lbl_station.Caption := gvWorkstation_name;
+              frm_MESLine.Show;
             end
           else
             begin
-              with data_module.cds_badmode do
-                begin
-                  EmptyDataSet;
-                end;
-              frm_main.InfoTips('获取生产线信息失败:'+vO.S['result.message']);
-              log(DateTimeToStr(now())+', [INFO] 获取生产线信息失败:'+vO.S['result.message']);
+              frm_main.InfoTips('MES还没有生产线，请联系管理员');
+              log(DateTimeToStr(now())+', [INFO] MES还没有生产线，请联系管理员');
             end;
         end
-      else if gvline_type='station' then    //工作站
+      else
         begin
-          frm_main.InfoTips('非主线设备不能切换生产线！');
-          log(DateTimeToStr(now())+', [INFO] 非主线设备不能切换生产线！');
+          with data_module.cds_badmode do
+            begin
+              EmptyDataSet;
+            end;
+          frm_main.InfoTips('获取生产线信息失败:'+vO.S['result.message']);
+          log(DateTimeToStr(now())+', [INFO] 获取生产线信息失败:'+vO.S['result.message']);
         end;
     end
   else
