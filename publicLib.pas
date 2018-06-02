@@ -62,7 +62,7 @@ uses
   function testingRecord(CONST fvSerialnumber : String; CONST fvOperation_pass : Bool; CONST fvOperate_result: String): Bool;   //保存测试数据
   function inspectionList : String;   //获取产品检查清单
   function inspectionValue(CONST fvParameters, fvTesttype, fvInstrument, fvFixture : WideString) : String;   //提交产品检验值
-
+  function inspectionunlock(CONST fvWorkorderid, fvEquipmentid: Integer; CONST fvBarcode, fvNote : String) : Bool;
 var
   ini_set : TMemIniFile;
   //mdc首层接口JSON
@@ -455,9 +455,9 @@ begin
       FieldDefs.Clear;
       Close;
       FieldDefs.Add('mesline_id', ftInteger, 0, True);
-      FieldDefs.Add('mesline_name', ftWideString, 30,False);
+      FieldDefs.Add('mesline_name', ftWideString, 80,False);
       FieldDefs.Add('mesline_type', ftWideString, 30,False);
-      FieldDefs.Add('stationlist', ftWideString, 1000, True);
+      FieldDefs.Add('stationlist', ftWideString, 3000, True);
       IndexDefs.Add('idx_mesline_id', 'mesline_id', [IxPrimary]);
       IndexDefs.Add('idx_mesline_name', 'mesline_name', []);
       CreateDataSet;
@@ -1139,6 +1139,14 @@ end;
 function inspectionValue(CONST fvParameters, fvTesttype, fvInstrument, fvFixture : WideString) : String;   //提交产品检验值
 begin
   Result := JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserID) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_producttest_onclient", ' + IntToStr(gvApp_id) + ', ' + IntToStr(gvProducttestid) +', '+ fvParameters +', "'+ fvTesttype +'", '+ IntToStr(gvWorkorder_id) + ', "' + fvInstrument +'", "'+ fvFixture +'"]');
+end;
+
+function inspectionunlock(CONST fvWorkorderid, fvEquipmentid: Integer; CONST fvBarcode, fvNote : String) : Bool;
+var
+  vO: ISuperObject;
+begin
+  vO := SO(JsonRPCobject(Aurl(gvServer_Host,gvServer_Port), '["'+gvDatabase+'", '+ IntTOStr(gvUserid) +', "'+ gvPassword +'", "aas.equipment.equipment", "action_producttest_equipmentunlock", ' + IntToStr(fvWorkorderid) + ', ' + IntToStr(fvEquipmentid) +', "' + fvBarcode +'", "' + fvNote +'"]'));
+  Result := vO.B['result.success'];
 end;
 
 end.

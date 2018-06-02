@@ -23,8 +23,8 @@ type
 
 var
   frm_container: Tfrm_container;
-  uvInput : String;
-  uvStart : DWORD;
+  uvCInput : String = '';
+  uvCStart : DWORD;
 
 implementation
 
@@ -39,16 +39,16 @@ var
   vFinish: DWORD;
   vO: ISuperObject;
 begin
-  if uvInput = '' then uvStart := GetTickCount();
-  if (Length(uvInput) >= vInputLen) AND (Key=#13) then
+  if uvCInput = '' then uvCStart := GetTickCount();
+  if (Length(uvCInput) >= vInputLen) AND (Key=#13) then
     begin
       vFinish := GetTickCount();
-      if (vFinish - uvStart) / Length(uvInput) < 100 then
+      if (vFinish - uvCStart) / Length(uvCInput) < 100 then
         begin
-          uvInput := UpperCase(uvInput);
-          if copy(uvInput,1,2)='AT' then  //扫描到的是容器
+          uvCInput := UpperCase(uvCInput);
+          if copy(uvCInput,1,2)='AT' then  //扫描到的是容器
             begin
-              vO := SO(scanContainer(uvInput));
+              vO := SO(scanContainer(uvCInput));
               if vO.B['result.success'] then  //成功扫描到容器
                 begin
                   if vO.B['result.isempty'] then
@@ -72,7 +72,7 @@ begin
                 end
               else  //扫描容器失败
                 begin
-                  log(DateTimeToStr(now())+', [ERROR]  容器号【'+copy(uvInput,3,Length(uvInput)-2)+'】扫描失败，错误信息：'+vO.S['result.message']);
+                  log(DateTimeToStr(now())+', [ERROR]  容器号【'+copy(uvCInput,3,Length(uvCInput)-2)+'】扫描失败，错误信息：'+vO.S['result.message']);
                 end;
             end
           else
@@ -85,12 +85,12 @@ begin
             end;
         end
       else
-        log(DateTimeToStr(now())+', [ERROR] 错误输入:' + uvInput);
-      uvInput := '';
+        log(DateTimeToStr(now())+', [ERROR] 错误输入:' + uvCInput);
+      uvCInput := '';
     end
   else
     begin
-      uvInput := uvInput + Key;
+      uvCInput := uvCInput + Key;
     end;
 end;
 
@@ -103,7 +103,7 @@ end;
 
 procedure Tfrm_container.pnl_tipsDblClick(Sender: TObject);
 begin
-  uvInput := '';
+  uvCInput := '';
 end;
 
 procedure Tfrm_container.tim_cleartipsTimer(Sender: TObject);

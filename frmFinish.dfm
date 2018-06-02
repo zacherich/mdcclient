@@ -1,10 +1,11 @@
 object frm_finish: Tfrm_finish
   Left = 0
   Top = 0
+  BorderIcons = [biMinimize, biMaximize]
   BorderStyle = bsDialog
   Caption = ' '#20135#21697#25253#24037
   ClientHeight = 454
-  ClientWidth = 474
+  ClientWidth = 501
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -21,21 +22,21 @@ object frm_finish: Tfrm_finish
   TextHeight = 19
   object lbl_tag_doing_qty: TLabel
     Left = 32
-    Top = 49
+    Top = 44
     Width = 64
     Height = 19
     Caption = #24453#25253#24037#65306
   end
   object lbl_tag_good_qty: TLabel
-    Left = 32
-    Top = 79
+    Left = 218
+    Top = 44
     Width = 63
     Height = 19
     Caption = #21512'   '#26684#65306
   end
   object lbl_tag_bad_qty: TLabel
-    Left = 175
-    Top = 79
+    Left = 359
+    Top = 44
     Width = 64
     Height = 19
     Caption = #19981#21512#26684#65306
@@ -47,8 +48,8 @@ object frm_finish: Tfrm_finish
     ParentFont = False
   end
   object lbl_bad_qty: TLabel
-    Left = 245
-    Top = 79
+    Left = 421
+    Top = 44
     Width = 9
     Height = 19
     Caption = '0'
@@ -60,15 +61,15 @@ object frm_finish: Tfrm_finish
     ParentFont = False
   end
   object lbl_good_qty: TLabel
-    Left = 93
-    Top = 79
+    Left = 279
+    Top = 44
     Width = 9
     Height = 19
     Caption = '0'
   end
   object lbl_doing_qty: TLabel
     Left = 93
-    Top = 49
+    Top = 44
     Width = 9
     Height = 19
     Caption = '0'
@@ -100,7 +101,7 @@ object frm_finish: Tfrm_finish
     ParentFont = False
   end
   object sbt_submit: TSpeedButton
-    Left = 375
+    Left = 325
     Top = 415
     Width = 81
     Height = 31
@@ -169,17 +170,32 @@ object frm_finish: Tfrm_finish
     ParentFont = False
   end
   object lbl_tag_submit: TLabel
-    Left = 176
-    Top = 49
+    Left = 32
+    Top = 79
     Width = 63
     Height = 19
     Caption = #25253'   '#24037#65306
   end
+  object lbl_tag_ignore: TLabel
+    Left = 217
+    Top = 79
+    Width = 64
+    Height = 19
+    Caption = #19981#28040#32791#65306
+  end
+  object sbt_close: TSpeedButton
+    Left = 412
+    Top = 415
+    Width = 81
+    Height = 31
+    Caption = #20851#38381
+    OnClick = sbt_closeClick
+  end
   object dbg_badmode: TDBGrid
     Left = 8
-    Top = 104
-    Width = 448
-    Height = 305
+    Top = 111
+    Width = 485
+    Height = 298
     DataSource = data_module.dsc_badmode
     Options = [dgEditing, dgAlwaysShowEditor, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
     TabOrder = 0
@@ -191,13 +207,30 @@ object frm_finish: Tfrm_finish
     OnDrawColumnCell = dbg_badmodeDrawColumnCell
     OnKeyDown = dbg_badmodeKeyDown
   end
-  object edt_submit: TEdit
-    Left = 245
-    Top = 46
-    Width = 145
-    Height = 27
-    NumbersOnly = True
+  object spn_ignore: TSpinEdit
+    Left = 279
+    Top = 76
+    Width = 58
+    Height = 29
+    Ctl3D = True
+    MaxValue = 1
+    MinValue = 0
+    ParentCtl3D = False
     TabOrder = 1
-    OnChange = edt_submitChange
+    Value = 0
+    OnChange = spn_ignoreChange
+  end
+  object spn_submit: TSpinEdit
+    Left = 93
+    Top = 76
+    Width = 92
+    Height = 29
+    Ctl3D = True
+    MaxValue = 1
+    MinValue = 1
+    ParentCtl3D = False
+    TabOrder = 2
+    Value = 0
+    OnChange = spn_submitChange
   end
 end

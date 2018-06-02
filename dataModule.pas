@@ -48,11 +48,10 @@ procedure Tdata_module.cds_badmodeAggregates0Update(Agg: TAggregate);
 var
   vSubmit_qty : Integer;
 begin
-  if frm_finish.edt_submit.Text='' then frm_finish.edt_submit.Text := '0';
   if frm_finish.lbl_bad_qty.Caption='' then frm_finish.lbl_bad_qty.Caption := '0';
   if frm_finish.lbl_good_qty.Caption='' then frm_finish.lbl_good_qty.Caption := '0';
   try
-    vSubmit_qty := StrToInt(frm_finish.edt_submit.Text);
+    vSubmit_qty := frm_finish.spn_submit.Value-frm_finish.spn_ignore.Value;
   except
     frm_main.InfoTips(Exception(ExceptObject).Message);
   end;
